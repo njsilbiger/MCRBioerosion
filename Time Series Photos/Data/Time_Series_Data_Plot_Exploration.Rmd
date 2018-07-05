@@ -1,0 +1,361 @@
+---
+title: "LTER Time Series Photos"
+author: "Mallory Rice"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+  pdf_document: default
+editor_options:
+  chunk_output_type: console
+---
+
+```{r libraries, include=FALSE}
+rm(list = ls())
+library(tidyverse)
+library(ggplot2)
+library(ggthemes)
+library(plyr)
+library(Hmisc)
+library(outliers)
+library(datasets)
+library(lattice)
+library(reshape)
+library(reshape2)
+library(tidyr)
+library(nlme)
+library(stats)
+library(data.table)
+library(lawstat)
+library(car)
+library(dplyr)
+library(base)
+library(rminer)
+```
+
+Uploading the data set. 
+
+```{r loading data sets}
+# opening up data set
+df <- read.csv(file="TimeSeries_Photo_Data_June2018.csv", encoding = 'UTF-8', na.strings=c("","NA"))
+
+glimpse(df) # looking at column names and type of vector
+# converting Year to factor
+df$Year <- as.factor(df$Year)
+# converting Number of Bitten Branches, Number of Scars on Massive Corals, and Number of Macroborers to numeric
+df$No.Bitten.Branches <- as.numeric(df$No.Bitten.Branches)
+df$No.Scars.Massive.Corals <- as.numeric(df$No.Scars.Massive.Corals)
+df$No.Macroborers <- as.numeric(df$No.Macroborers)
+
+glimpse(df)
+```
+
+# Plot of the frequency of corals sampled.
+
+```{r echo=FALSE}
+ggplot(df, aes(x = Genus, fill = Genus))+
+  geom_bar()+
+  scale_fill_manual(values = c("aquamarine4", "goldenrod1", "coral4"))+
+  ylab("Count")+
+  theme_few()
+```
+
+# Plot of the frequency of corals sampled across the six sites.
+
+```{r echo=FALSE}
+ggplot(df, aes(x = Site, fill = Genus))+
+  geom_bar()+ 
+  scale_fill_manual(values = c("aquamarine4", "goldenrod1", "coral4"))+
+  ylab("Count")+
+  theme_few()
+```
+
+# Plot of the frequency of corals sampled across years.
+
+```{r echo=FALSE}
+ggplot(df, aes(x = Year, fill = Genus))+
+  geom_bar()+
+  scale_fill_manual(values = c("aquamarine4", "goldenrod1", "coral4"))+
+  ylab("Count")+
+  theme_few()
+```
+
+# Plot of the frequency of corals sampled across the six sites and years.
+
+```{r echo=FALSE}
+ggplot(df, aes(x = Year, fill = Genus))+
+  facet_wrap(~Site)+
+  geom_bar()+
+  scale_fill_manual(values = c("aquamarine4", "goldenrod1", "coral4"))+
+  ylab("Count")+
+  theme_few()
+```
+
+I'm subsetting the data set by massive Porites corals because these are the dominant corals sampled (only a few Acropora or Pocillopora corals have been observed in the fringing reef). 
+
+```{r}
+porites <- df %>% subset(Genus == "Massive Porites")
+porites <- droplevels(porites)
+levels(porites$Genus)
+```
+
+Calculating the bite density for massive Porites corals. 
+
+```{r}
+# from Burkepile (2012): the number of predation scars per unit area for each coral colony were calculated.
+
+# first need to multiply the coral width and length measurements to get an idea of 2-dimensional coral surface area
+# the units for these measurements were cm
+# multyipling wide wide diameter (cm) by perpendicular diameter (cm)
+# first need to convert measurements of length to m
+porites$Wide.Diameter.m <- porites$Wide.Diameter.cm / 100
+porites$Perp.Diameter.m <- porites$Perp.Diameter.cm / 100
+porites$surface.area <- porites$Wide.Diameter.m * porites$Perp.Diameter.m
+# units for surface area: m^2
+# looking at summary statistics for focal coral surface area
+summary(porites$surface.area)
+
+# now need to calculate bite density
+# do this by dividing the number of bites on each coral by the focal coral's surface area
+porites$bite.density <- porites$No.Scars.Massive.Corals / porites$surface.area
+# units of bite density: bites/m^2
+# looking at summary statistics for focal coral bite density
+summary(porites$bite.density)
+```
+
+Calculating the macroborer density for massive Porites corals. 
+
+```{r echo=FALSE}
+# already have surface area of each focal coral colony in m^2
+
+# now need to calculate macroborer density
+# do this by dividing the number of macroborers on eac coral by the focal coral's surface area
+porites$macro.density <- porites$No.Macroborers / porites$surface.area
+# units of macroborer density: macroborers/m^2
+# looking at summary statistics for focal coral bite density
+summary(porites$macro.density)
+```
+
+Giving replicates labels for either "bitten or not bitten, "macroborers present and no macroborers." 
+
+```{r echo=FALSE}
+# use ifelse()
+glimpse(porites)
+porites$bite <- ifelse(porites$No.Scars.Massive.Corals > 0, "Bitten", "Not Bitten")
+porites$macroborer <- ifelse(porites$No.Macroborers > 0, "Macroborers Present", "No Macroborers")
+
+# need to change the order of levels for the macroborer column
+porites$macroborer <- factor(porites$macroborer, levels = c("No Macroborers", "Macroborers Present"))
+levels(porites$macroborer)
+```
+
+# Exploratory plots of macroborer density.
+
+### Jitterplot of macroborer density by LTER site.
+
+```{r echo=FALSE}
+LTERpalette <- c("aquamarine4", "brown4", "cornflowerblue", "darkolivegreen", "darkslategray")
+
+ggplot(porites, aes(x = Site, y = macro.density, colour = Site))+
+  geom_jitter(alpha = 0.5)+
+  scale_colour_manual(values = LTERpalette)+
+  ylab(expression(paste("Macroborer density (macroborer/", m^"2"~")")))+
+  theme_few()
+```
+
+### Jitterplot of macroborer density by year.
+
+```{r echo=FALSE}
+ggplot(porites, aes(x = Year, y = macro.density, colour = Site))+
+  geom_jitter(alpha = 0.5)+
+  scale_colour_manual(values = LTERpalette)+
+  ylab(expression(paste("Macroborer density (macroborer/", m^"2"~")")))+
+  theme_few()
+```
+
+### Regression of macroborer density by bite density for all corals.
+
+```{r echo=FALSE}
+ggplot(porites, aes(x = macro.density, y = bite.density))+
+  geom_point()+
+  geom_smooth(method = lm)+
+  xlab(expression(paste("Macroborer density (macroborer/", m^"2"~")")))+
+  ylab(expression(paste("Bite density (bite/", m^"2"~")")))+
+  theme_few()
+```
+
+### Regression of macroborer density by bite density for corals that are bitten.
+
+```{r echo=FALSE}
+porites.sub <- porites %>% subset(No.Scars.Massive.Corals > 0)
+
+ggplot(porites.sub, aes(x = macro.density, y = bite.density))+
+  geom_point()+
+  geom_smooth(method = lm)+
+  xlab(expression(paste("Macroborer density (macroborer/", m^"2"~")")))+
+  ylab(expression(paste("Bite density (bite/", m^"2"~")")))+
+  theme_few()
+```
+
+### Regression of macroborer density by bite density for all corals by LTER site.
+
+```{r echo=FALSE}
+ggplot(porites, aes(x = macro.density, y = bite.density, colour = Site))+
+  facet_wrap(~Site, scales="free")+
+  geom_point()+
+  geom_smooth(method = lm)+
+  scale_colour_manual(values = LTERpalette)+
+  xlab(expression(paste("Macroborer density (macroborer/", m^"2"~")")))+
+  ylab(expression(paste("Bite density (bite/", m^"2"~")")))+
+  theme_few()+
+  guides(colour = FALSE)
+```
+
+### Regression of macroborer density by bite density for all corals by LTER site and year.
+
+```{r echo=FALSE}
+ggplot(porites, aes(x = macro.density, y = bite.density, colour = Year))+
+  facet_wrap(~Year, scales="free")+
+  geom_point()+
+  geom_smooth(method = lm)+
+  scale_colour_manual(values = LTERpalette)+
+  xlab(expression(paste("Macroborer density (macroborer/", m^"2"~")")))+
+  ylab(expression(paste("Bite density (bite/", m^"2"~")")))+
+  theme_few()+
+  guides(colour = FALSE)
+```
+
+# Contingency plots for macroborers
+
+Need to create a contingency table for corals that have macroborers and do not have macroborers and are bitten vs. not bitten
+
+### Plot of bitten vs. macroborer corals
+
+```{r echo=FALSE}
+table(porites$bite, porites$macroborer)
+
+ggplot(porites, aes(x = macroborer, fill = bite))+
+  geom_bar(stat = "count")+ # position = "fill" for proportion
+  xlab("")+
+  ylab("Count")+
+  scale_fill_manual(name = "", values = c("deepskyblue4", "gray48"))+
+  scale_x_discrete(labels = c("No\nMacroborers", "Macroborers\nPresent"))+
+  theme_few()
+```
+
+### Plot of bitten vs. macroborer corals by LTER site
+
+```{r echo=FALSE}
+table(porites$bite, porites$macroborer, porites$Site)
+
+ggplot(porites, aes(x = macroborer, fill = bite))+
+  facet_wrap(~Site)+
+  geom_bar(stat = "count")+
+  xlab("")+
+  ylab("Count")+
+  scale_fill_manual(name = "", values = c("deepskyblue4", "gray48"))+
+  scale_x_discrete(labels = c("No\nMacroborers", "Macroborers\nPresent"))+
+  theme_few()
+```
+
+### Plot of bitten vs. macroborer corals by year
+
+```{r echo=FALSE}
+table(porites$bite, porites$macroborer, porites$Year)
+
+ggplot(porites, aes(x = bite, fill = macroborer))+
+  facet_wrap(~Year)+
+  geom_bar(stat = "count")+
+  xlab("")+
+  ylab("Count")+
+  scale_fill_manual(name = "", values = c("deepskyblue4", "gray48"))+
+  scale_x_discrete(labels = c("No\nMacroborers", "Macroborers\nPresent"))+
+  theme_few()
+```
+
+# Contingency plots for part of dead colony
+
+### Plot of bitten vs. dead colony corals
+
+```{r echo=FALSE}
+table(porites$bite, porites$Part.Dead.Colony)
+
+ggplot(porites, aes(x = Part.Dead.Colony, fill = bite))+
+  geom_bar(stat = "count")+
+  xlab("Coral Colony Part of Dead Colony?")+
+  ylab("Count")+
+  scale_fill_manual(name = "", values = c("deepskyblue4", "gray48"))+
+  theme_few()
+```
+
+### Plot of bitten vs. dead colony corals by LTER site
+
+```{r echo=FALSE}
+table(porites$bite, porites$Part.Dead.Colony, porites$Site)
+
+ggplot(porites, aes(x = Part.Dead.Colony, fill = bite))+
+  facet_wrap(~Site)+
+  geom_bar(stat = "count")+
+  xlab("Coral Colony Part of Dead Colony?")+
+  ylab("Count")+
+  scale_fill_manual(name = "", values = c("deepskyblue4", "gray48"))+
+  theme_few()
+```
+
+### Plot of bitten vs. dead colony corals by year
+
+```{r echo=FALSE}
+table(porites$bite, porites$Part.Dead.Colony, porites$Year)
+
+ggplot(porites, aes(x = Part.Dead.Colony, fill = bite))+
+  facet_wrap(~Year)+
+  geom_bar(stat = "count")+
+  xlab("Coral Colony Part of Dead Colony?")+
+  ylab("Count")+
+  scale_fill_manual(name = "", values = c("deepskyblue4", "gray48"))+
+  theme_few()
+```
+
+# Contingency plots for part of dead colony and macroborers
+
+### Plot of macroborers vs. dead colony corals
+
+```{r echo=FALSE}
+table(porites$macroborer, porites$Part.Dead.Colony)
+
+ggplot(porites, aes(x = Part.Dead.Colony, fill = macroborer))+
+  geom_bar(stat = "count")+
+  xlab("Coral Colony Part of Dead Colony?")+
+  ylab("Count")+
+  scale_fill_manual(name = "", values = c("deepskyblue4", "gray48"))+
+  theme_few()
+```
+
+### Plot of bitten vs. dead colony corals by LTER site
+
+```{r echo=FALSE}
+table(porites$macroborer, porites$Part.Dead.Colony, porites$Site)
+
+ggplot(porites, aes(x = Part.Dead.Colony, fill = macroborer))+
+  facet_wrap(~Site)+
+  geom_bar(stat = "count")+
+  xlab("Coral Colony Part of Dead Colony?")+
+  ylab("Count")+
+  scale_fill_manual(name = "", values = c("deepskyblue4", "gray48"))+
+  theme_few()
+```
+
+### Plot of bitten vs. dead colony corals by year
+
+```{r echo=FALSE}
+table(porites$bite, porites$Part.Dead.Colony, porites$Year)
+
+ggplot(porites, aes(x = Part.Dead.Colony, fill = macroborer))+
+  facet_wrap(~Year)+
+  geom_bar(stat = "count")+
+  xlab("Coral Colony Part of Dead Colony?")+
+  ylab("Count")+
+  scale_fill_manual(name = "", values = c("deepskyblue4", "gray48"))+
+  theme_few()
+```
