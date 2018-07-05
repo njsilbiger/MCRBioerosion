@@ -52,11 +52,12 @@ mod1<-glm(bite~bore.cm2, data=TSData, family = 'binomial')
 mod2<-glmer(bite~bore.cm2+(1|Year:Site), data=TSData, family = 'binomial')
 
 # plot the best fit line (need to update to plot the effect size from MEM)
-plot(TSData$bore.cm2, TSData$bite, xlab = 'Density of borers (counts/cm2)',
-     ylab = 'Probability of coral being bitten', cex.lab=2, cex.axis=1.5)
+png('Output/Logistic plot.png', width = 500, height = 500)
+plot(TSData$bore.cm2, TSData$bite, xlab = expression(paste('Density of borers (counts/cm'^2,')')),
+     ylab = 'Probability of coral being bitten', cex.lab=1.5, cex.axis=1.5)
 curve(predict(mod1,data.frame(bore.cm2=x),type="resp"),add=TRUE, col = 'red', lwd=2) # draws a curve based on prediction from logistic regression model
 points(TSData$bore.cm2,fitted(mod1),pch=20, col = 'red') # optional: you could skip this draws an invisible set of points of body size 
-
+dev.off()
 
 # total number of scarides per year and site
 Scaridae.counts<- FData %>%
