@@ -59,6 +59,52 @@ curve(predict(mod1,data.frame(bore.cm2=x),type="resp"),add=TRUE, col = 'red', lw
 points(TSData$bore.cm2,fitted(mod1),pch=20, col = 'red') # optional: you could skip this draws an invisible set of points of body size 
 dev.off()
 
+## prettier plot
+## bootstrapped confidence intervals
+newdat<-data.frame(x=seq(0,2,length=20))
+newdat2<-data.frame(x = TSData$bore.cm2)
+mm<-model.matrix(~x,newdat)
+
+# predFun<-function(.) inv.logit(mm%*%fixef(.)) 
+# bb<-bootMer(mod2,FUN=predFun,nsim=2000)
+# bb_se<-apply(bb$t,2,function(x) x[order(x)][c(5,195)])
+# 
+# predfun2<-function(m) predict(m, type="response", re.form = NA)
+# 
+# bb<-bootMer(mod2,predfun2,1000)
+# bb_se<-apply(bb$t,2,function(x) x[order(x)][c(5,195)])
+# 
+# newdat2$blo<-inv.logit(bb_se[1,])
+# newdat2$bhi<-inv.logit(bb_se[2,])
+# 
+# newdat$blo<-inv.logit(bb_se[1,])
+# newdat$bhi<-inv.logit(bb_se[2,])
+y<-inv.logit(mm%*%fixef(mod2))
+
+# pvar1 <- diag(mm %*% tcrossprod(vcov(mod2),mm))
+# tvar1 <- pvar1+VarCorr(mod2)$'Year:Site'[1]  ## must be adapted for more complex models
+# newdat <- data.frame(
+#   x=newdat$x,
+#   y=y,
+#   plo = inv.logit(y-1.96*sqrt(pvar1))
+#   , phi = inv.logit(y+1.96*sqrt(pvar1))
+#   , tlo = inv.logit(y-1.96*sqrt(tvar1))
+#   , thi = inv.logit(y+1.96*sqrt(tvar1))
+# )
+# plot the best fit line with bootstrapped CI from mixed effectes model
+png('Output/Logistic plot2.png', width = 500, height = 500)
+plot(TSData$bore.cm2, TSData$bite, xlab = expression(paste('Density of borers (counts/cm'^2,')')),
+     ylab = 'Probability of coral being bitten', cex.lab=1.5, cex.axis=1.5, col = 'grey')
+#curve(predict(mod2,data.frame(bore.cm2=x),type="resp",re.form=NA),add=TRUE, col = 'black', lwd=2) # draws a curve based on prediction from logistic regression model
+lines(newdat$x, y,col = 'black', lwd=2)
+#lines(newdat$x,newdat$bhi,col="darkgrey",lty=2,lwd=2)
+#lines(newdat$x,newdat$blo,col="darkgrey",lty=2,lwd=2)
+# make a transparent grey
+#myGrey<-rgb(t(col2rgb('grey')/255),alpha=0.3) 
+#polygon(c(newdat$x,rev(newdat$x)),c(newdat$blo,rev(newdat$bhi)),col=myGrey,border=NA)
+dev.off()
+
+
 # total number of scarides per year and site
 Scaridae.counts<- FData %>%
   filter(Family=='Scaridae' & Habitat=='FR')%>% # only put scarides on fringing reef (might want to only include greater than 150mm)
