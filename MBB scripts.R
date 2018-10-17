@@ -11,6 +11,7 @@ rm(list=ls())
 library(tidyverse)
 library(lme4)
 library(lmerTest)
+library(boot)
 
 ## load data ###############
 ### This is the time series from Mallory Rice on bites and bore holes per coral 
@@ -123,3 +124,28 @@ TotalBites$Year<-as.factor(TotalBites$Year)
 FishBites<-left_join(TotalBites, Scaridae.counts)
 
 plot(FishBites$sum.fish, FishBites$mean.scars)
+
+## make a high vs low nutrient plot
+
+TSData$Nut<-factor(ifelse(TSData$Site=='LTER1'|TSData$Site=='LTER2'|TSData$Site=='LTER3', 'High','Low'))
+# calculate means by nutrients
+BitesNuts<-TSData%>%
+  group_by(Nut)%>%
+  summarise(.,mean.scars = mean(bites.cm2), mean.bore = mean(bore.cm2), se.scars = sd(bites.cm2)/sqrt(n()), se.bore = sd(bore.cm2)/sqrt(n()) )
+
+# make a barplot with error bars
+b<-barplot(BitesNuts$mean.bore, names.arg = c('High Nutrient Sites','Low Nutrient Sites'), ylim=c(0,0.06), ylab = expression('mean macroborers cm'^-2), col = 'darkgrey')
+segments(b,BitesNuts$mean.bore+BitesNuts$se.bore, b,BitesNuts$mean.bore-BitesNuts$se.bore, col = 'black')
+#model
+modNut.bore<-lmer(bore.cm2~ Nut +(1|Year), data = TSData)
+anova(modNut.bore)
+
+# do the same for the scarids
+Scaridae.counts$Nut<-factor(ifelse(Scaridae.counts$Site=='LTER1'|Scaridae.counts$Site=='LTER2'|Scaridae.counts$Site=='LTER3', 'High','Low'))
+
+ScaridaeNuts<-Scaridae.counts%>%
+  group_by(Nut)%>%
+  summarise(.,mean.scars = mean(sum.fish), se.scars = sd(sum.fish)/sqrt(n()) )
+
+c<-barplot(ScaridaeNuts$mean.scars, names.arg = c('High Nutrient Sites','Low Nutrient Sites'), ylim=c(0,180),ylab = expression('mean total fish counts'^-2), col = 'darkgrey')
+segments(c,ScaridaeNuts$mean.scars+ScaridaeNuts$se.scars, c,ScaridaeNuts$mean.scars-ScaridaeNuts$se.scars, col = 'black')
