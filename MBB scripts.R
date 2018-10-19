@@ -67,7 +67,8 @@ TSData$bite<-ifelse(TSData$bites.cm2>0,1,0)
 # run a logisitic regression for probability of getting bitten with density of macroborers
 #mod1<-glm(bite~bore.m2, data=TSData, family = 'binomial')
 # scaled values and mixed effect model to account for site by year variance
-mod2<-glmer(bite~scale(x = bore.m2, scale = TRUE)+(1|Year:Site), data=TSData, family = 'binomial')
+TSData$bore.m2.scaled<-as.numeric(scale(x = TSData$bore.m2, scale = TRUE))
+mod2<-glmer(bite~bore.m2.scaled+(1|Year:Site), data=TSData, family = 'binomial')
 summary(mod2)
 
 #get robust standard errors and unscaled data for the plot
@@ -102,6 +103,10 @@ lines(SE$data$bore.m2, SE$data$ymax) # SE lines
 # fill in with grey polygon
 polygon(c(SE$data$bore.m2,rev(SE$data$bore.m2)),c(SE$data$ymax,rev(SE$data$ymin)),col=grey2, border = NA)
 dev.off()
+
+## assumptions of homoscedasticity
+boxplot(resid(mod3)~TSData$Site)
+boxplot(resid(mod3)~TSData$Year)
 
 
 # total number of scarides per year and site
