@@ -108,6 +108,15 @@ dev.off()
 boxplot(resid(mod3)~TSData$Site)
 boxplot(resid(mod3)~TSData$Year)
 
+## Raw scaridae data
+Scaridae<- FData %>%
+  filter(Site == 1| Site == 3 | Site==4) %>%
+  filter(Family=='Scaridae' & Habitat=='FR') # only put scarides on fringing reef (might want to only include greater than 150mm)
+
+Scaridae$Site<-as.factor(Scaridae$Site)
+levels(Scaridae$Site)<-c('LTER1','LTER3','LTER4') # make the levels the same in this dataset
+
+
 
 # total number of scarides per year and site
 Scaridae.counts<- FData %>%
@@ -209,3 +218,44 @@ dev.off()
 qqnorm(resid(N.mod))
 qqline(resid(N.mod))
 # looks good!
+
+## TWo way ANOVAS for lithophaga densities, parrotfish biomass, and percent cover of massive porites by site and year
+#Lithophaga
+MBB.mod<-lm(bore.m2^(1/4)~Site*Year , data = TSData) # need to 4th root transform to meet assumptions
+anova(MBB.mod)
+summary(MBB.mod)
+
+qqnorm(resid(MBB.mod))
+qqline(resid(MBB.mod))
+hist(resid(MBB.mod))
+
+#scars
+Scar.mod<-lm(bites.m2^(1/4)~Site*Year , data = TSData) 
+anova(Scar.mod)
+summary(Scar.mod)
+
+qqnorm(resid(Scarmod))
+qqline(resid(Scar.mod))
+hist(resid(Scar.mod))
+
+# Fish counts
+Scaridae.mod <-lm(log(Count+1)~Site*Year, data = Scaridae)
+anova(Scaridae.mod)
+summary(Scaridae.mod)
+
+qqnorm(resid(Scaridae.mod))
+qqline(resid(Scaridae.mod))
+hist(resid(Scaridae.mod))
+
+# Porites cover
+#Convert Porites SA to percent cover
+TSData$PoritesCover<-100*(TSData$Surface.area.m2/0.25)  # quadrats were 0.25 m2
+Porites.mod<-lm(PoritesCover^(1/4) ~Site*Year , data = TSData)
+anova(Porites.mod)
+summary(Porites.mod)
+
+qqnorm(resid(Porites.mod))
+qqline(resid(Porites.mod))
+hist(resid(Porites.mod))
+
+
