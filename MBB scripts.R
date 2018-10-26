@@ -17,7 +17,9 @@ library(jtools)
 
 ## load data ###############
 ### This is the time series from Mallory Rice on bites and bore holes per coral 
-TSData<-read.csv('Data/TimeSeries_Photo_Data_7.3.2018.csv')
+#TSData<-read.csv('Data/TimeSeries_Photo_Data_7.3.2018.csv')
+TSData<-read.csv('Data/TimeSeries_Photo_Data_10.25.2018.csv')
+
 ## read in coral cover data
 coverdata<-read.csv('Data/knb-lter-mcr.4_1_20151209.csv')
 ##read in fish data
@@ -141,31 +143,6 @@ plot(FishBites$sum.fish, FishBites$mean.scars)
 
 #### Analysis of bioeroder density and nutrients ####
 
-## make a high vs low nutrient plot
-
-# TSData$Nut<-factor(ifelse(TSData$Site=='LTER1'|TSData$Site=='LTER2'|TSData$Site=='LTER3', 'High','Low'))
-# # calculate means by nutrients
-# BitesNuts<-TSData%>%
-#   group_by(Nut)%>%
-#   summarise(.,mean.scars = mean(bites.cm2), mean.bore = mean(bore.cm2), se.scars = sd(bites.cm2)/sqrt(n()), se.bore = sd(bore.cm2)/sqrt(n()) )
-# 
-# # make a barplot with error bars
-# b<-barplot(BitesNuts$mean.bore, names.arg = c('High Nutrient Sites','Low Nutrient Sites'), ylim=c(0,0.06), ylab = expression('mean macroborers cm'^-2), col = 'darkgrey')
-# segments(b,BitesNuts$mean.bore+BitesNuts$se.bore, b,BitesNuts$mean.bore-BitesNuts$se.bore, col = 'black')
-# #model
-# modNut.bore<-lmer(bore.cm2~ Nut +(1|Year), data = TSData)
-# anova(modNut.bore)
-
-# # do the same for the scarids
-# Scaridae.counts$Nut<-factor(ifelse(Scaridae.counts$Site=='LTER1'|Scaridae.counts$Site=='LTER2'|Scaridae.counts$Site=='LTER3', 'High','Low'))
-# 
-# ScaridaeNuts<-Scaridae.counts%>%
-#   group_by(Nut)%>%
-#   summarise(.,mean.scars = mean(sum.fish), se.scars = sd(sum.fish)/sqrt(n()) )
-# 
-# c<-barplot(ScaridaeNuts$mean.scars, names.arg = c('High Nutrient Sites','Low Nutrient Sites'), ylim=c(0,180),ylab = expression('mean total fish counts'^-2), col = 'darkgrey')
-# segments(c,ScaridaeNuts$mean.scars+ScaridaeNuts$se.scars, c,ScaridaeNuts$mean.scars-ScaridaeNuts$se.scars, col = 'black')
-
 
 #Filter out the 3 sites we are using and the turbanaria %N data
 Turb<-NutData %>%
@@ -178,14 +155,14 @@ Turb<-NutData %>%
 bore<-TSData %>%
   filter(Site == 'LTER1'| Site == 'LTER3' | Site=="LTER4")%>%
   group_by(Site, Year) %>%
-  summarise(bore = mean(bore.cm2),  bore.se = sd(bore.cm2)/sqrt(n()))
+  summarise(bore = mean(bore.m2),  bore.se = sd(bore.m2)/sqrt(n()))
 #rename the levels
 levels(bore$Site)<-c("LTER 1","LTER 2","LTER 3","LTER 4","LTER 5","LTER 6")
 
 # bring together the data frames
 Bore.algae<-left_join(bore, Turb)
 
-# bring in the rapid data points for 2016 (These were not available from the LTER data set)
+# bring in the rapid data points for 2016 from Tom (These were not available from the long-term LTER data set). 
 Bore.algae$N[Bore.algae$Site=='LTER 1' & Bore.algae$Year==2016] = 0.61
 Bore.algae$N[Bore.algae$Site=='LTER 4' & Bore.algae$Year==2016] = 0.59
 
@@ -225,18 +202,61 @@ MBB.mod<-lm(bore.m2^(1/4)~Site*Year , data = TSData) # need to 4th root transfor
 anova(MBB.mod)
 summary(MBB.mod)
 
+#TSData$bore.m21<-(TSData$bore.m2+1)
+#MBB.mod<-glm(bore.m21~Site*Year, family  = Gamma(link = 'log'), data = TSData) # need to 4th root transform to meet assumptions
 qqnorm(resid(MBB.mod))
 qqline(resid(MBB.mod))
 hist(resid(MBB.mod))
+# Not good... very zero-inflated and not normal
 
 #scars
-Scar.mod<-lm(bites.m2^(1/4)~Site*Year , data = TSData) 
+Scar.mod<-lm(log(bites.m2+1)~Site*Year , data = TSData) 
 anova(Scar.mod)
 summary(Scar.mod)
 
-qqnorm(resid(Scarmod))
+qqnorm(resid(Scar.mod))
 qqline(resid(Scar.mod))
 hist(resid(Scar.mod))
+# Not good... very zero-inflated and not normal
+
+# run a hurdle model (Zero-inflated Gamma) because too many zeros and non-normal
+TSData$bore<-ifelse(TSData$bore.cm2>0,1,0) # make a column of 1's and 0's 
+
+MBB.mod1 <- glm(bore ~ Site*Year, data = TSData, family = binomial(link = logit)) # the logisitic part (0/1)
+MBB.mod2 <- glm(bore.m2 ~ Site*Year, data = subset(TSData, bore == 1), family = Gamma(link = log)) # The gamma part (>0)
+
+#qqnorm plots
+qqnorm(resid(MBB.mod2))
+qqline(resid(MBB.mod2))
+hist(resid(MBB.mod2))
+#much better!
+
+#binomial coefficient
+bin_coef <- plogis(coef(MBB.mod1)[[1]])
+(plogis(confint(MBB.mod1)))
+Anova(MBB.mod1, type = 3)
+summary(MBB.mod1)
+
+#gamma coefficient
+gamma_coef <- exp(coef(MBB.mod2)[[1]])
+(exp(confint(MBB.mod2)))
+Anova(MBB.mod2, type = 3)
+summary(MBB.mod2)
+
+#scars
+#Scar.mod<-lm(log(bites.m2+1)~Site*Year , data = TSData) 
+Scar.mod1 <- glm(bite ~ Site*Year, data = TSData, family = binomial(link = logit)) # the logisitic part (0/1)
+Scar.mod2 <- glm(bites.m2 ~ Site*Year, data = subset(TSData, bite == 1), family = Gamma(link = log)) # The gamma part (>0)
+#check the residuals
+qqnorm(resid(Scar.mod2))
+qqline(resid(Scar.mod2))
+hist(resid(Scar.mod2))
+#binomial
+Anova(Scar.mod1)
+summary(Scar.mod1)
+#gamma
+Anova(Scar.mod2)
+summary(Scar.mod2)
 
 # Fish counts
 Scaridae.mod <-lm(log(Count+1)~Site*Year, data = Scaridae)
