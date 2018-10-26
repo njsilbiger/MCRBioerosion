@@ -244,7 +244,6 @@ Anova(MBB.mod2, type = 3)
 summary(MBB.mod2)
 
 #scars
-#Scar.mod<-lm(log(bites.m2+1)~Site*Year , data = TSData) 
 Scar.mod1 <- glm(bite ~ Site*Year, data = TSData, family = binomial(link = logit)) # the logisitic part (0/1)
 Scar.mod2 <- glm(bites.m2 ~ Site*Year, data = subset(TSData, bite == 1), family = Gamma(link = log)) # The gamma part (>0)
 #check the residuals
