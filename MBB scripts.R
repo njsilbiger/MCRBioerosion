@@ -14,6 +14,7 @@ library(lmerTest)
 library(boot)
 library(grDevices)
 library(jtools)
+library(car)
 
 ## load data ###############
 ### This is the time series from Mallory Rice on bites and bore holes per coral 
@@ -95,8 +96,8 @@ grey2<-adjustcolor( "grey", alpha.f = 0.2)
 
 pdf('Output/Logistic plot2.pdf', 6,6,useDingbats = FALSE)
 par(mar=c(5.1,5.3,4.1,2.1))
-plot(TSData$bore.m2, TSData$bite, xlab = expression(paste('Density of borers (counts/m'^2,')')),
-     ylab = 'Probability of coral scar', cex.lab=2, cex.axis=1.5, col = 'grey', pch = 19, cex = 0.5)
+plot(TSData$bore.m2, TSData$bite, xlab = expression(paste('Density of '*italic(Lithophaga)*' (counts per m'^2,')')),
+     ylab = 'Probability of parrotfish scar', cex.lab=1.5, cex.axis=1.5, col = 'grey', pch = 19, cex = 0.5)
 #curve(predict(mod2,data.frame(bore.cm2=x),type="resp",re.form=NA),add=TRUE, col = 'black', lwd=2) # draws a curve based on prediction from logistic regression model
 #lines(newdat$x, y,col = 'black', lwd=2)
 lines(SE$data$bore.m2, SE$data$bite, lwd=2) # prediction
@@ -175,10 +176,13 @@ anova(N.mod)
 summary(N.mod)
 
 pdf(file = 'Output/BorervsN.pdf', width = 6, height = 6, useDingbats = FALSE)
-par(mar=c(5.1,5.3,4.1,2.1))
+par(mar=c(5.1,8.3,4.1,2.1))
 # make a plot of tissue N versus density of borers
-plot(Bore.algae$N, Bore.algae$bore, cex.lab = 2, cex.axis = 1.5, cex = 1.5,ylim = c(0,1100),
-     pch = 19, xlab = '% Tissue N', ylab =expression(paste('Mean density of borers (counts/m'^2,')')) )
+plot(Bore.algae$N, Bore.algae$bore, cex.lab = 1.5, cex.axis = 1.5, cex = 1.5,ylim = c(0,1100),
+     pch = 19, xlab = '% Tissue N', ylab =NA)
+mtext(text=expression(paste('Mean density of', italic(' Lithophaga'))), side = 2, line = 4, cex = 1.5 )
+mtext(text=expression(paste(' (counts per m'^{2},')')), side = 2, line = 2.2, cex = 1.5 )
+
 #generate new data for the fit
 xx <- seq(0,1, length=50)
 pred<-predict(N.mod, data.frame(N=xx), se.fit = TRUE)
