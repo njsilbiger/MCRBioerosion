@@ -1,6 +1,6 @@
 #### Logistic regression testing the probability of a parrotfish bite based on MBB density ###
 #### Script by Nyssa Silbiger #####
-### Edited on 7/5 2018 #########
+### Edited on 11/16 2018 #########
 ###############################
 
 
