@@ -27,6 +27,8 @@ coverdata<-read.csv('Data/knb-lter-mcr.4_1_20151209.csv')
 FData<-read.csv('Data/MCR_LTER_Annual_Fish_Survey_20160509.csv')
 # read in the CHN Data
 NutData<-read.csv('Data/Macroalgal CHN.csv')
+#read in groundtruthing data
+TruthData<-read.csv('Data/groundtruth.csv')
 
 
 ### analysis #############
@@ -281,4 +283,47 @@ qqnorm(resid(Porites.mod))
 qqline(resid(Porites.mod))
 hist(resid(Porites.mod))
 
+
+### Ground truth the 2D to 3D counts
+# simple linear regression between the 2D and 3D counts
+# scars
+mod.truth.scars<-lm(log(dcount_scar+1)~log(pcount_scar+1), data = TruthData)
+hist(resid(mod.truth.scars))  
+qqnorm(resid(mod.truth.scars))
+qqline(resid(mod.truth.scars))
+anova(mod.truth.scars)  
+summary(mod.truth.scars)
+# p<0.001, R2 = 0.58, slope = 0.59, 2D slightly over estimated (intercept = 1.69)
+
+#Lithophaga
+mod.truth.bore<-lm(log(dcount_mbb+1)~log(pcount_mbb+1), data = TruthData)
+hist(resid(mod.truth.bore))  
+qqnorm(resid(mod.truth.bore))
+qqline(resid(mod.truth.bore))
+anova(mod.truth.bore)  
+summary(mod.truth.bore)
+# p<0.001, R2 = 0.58, slope = 1.17, 2D slightly under estimated (intercept -0.19)
+
+par(mfrow=c(1,2))
+#plot the parrotfish scars
+plot(log(TruthData$pcount_scar+1), log(TruthData$dcount_scar+1), pch = 19, xlab = 'log(Scar photo counts +1)', ylab = 'log(Scar diver counts +1)')
+abline(1,1, lty = 2)
+pred<-predict(mod.truth.scars, se.fit = TRUE)
+ind<-order(TruthData$pcount_scar)
+x<-log(TruthData$pcount_scar[ind]+1)
+lines(x, pred$fit[ind])
+lines(x, pred$fit[ind]+pred$se.fit[ind])
+lines(x, pred$fit[ind]-pred$se.fit[ind])
+polygon(c(x,rev(x)),c(pred$fit[ind]+pred$se.fit[ind],rev(pred$fit[ind]-pred$se.fit[ind])),col=grey2, border = NA)
+
+# plot the lithophagids
+plot(log(TruthData$pcount_mbb+1), log(TruthData$dcount_mbb+1), pch = 19, xlab = 'log(Lithophaga photo counts +1)', ylab = 'log(Lithophaga diver counts +1)')
+abline(1,1, lty = 2)
+pred<-predict(mod.truth.bore, se.fit = TRUE)
+ind<-order(TruthData$pcount_mbb)
+x<-log(TruthData$pcount_mbb[ind]+1)
+lines(x, pred$fit[ind])
+lines(x, pred$fit[ind]+pred$se.fit[ind])
+lines(x, pred$fit[ind]-pred$se.fit[ind])
+polygon(c(x,rev(x)),c(pred$fit[ind]+pred$se.fit[ind],rev(pred$fit[ind]-pred$se.fit[ind])),col=grey2, border = NA)
 
