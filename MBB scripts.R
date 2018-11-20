@@ -49,12 +49,6 @@ TSData$bites.m2<-TSData$No.Bites/TSData$Surface.area.m2
 
 # label which corals have a macroborer
 yes<-which(TSData$bore.cm2>0)
-# calculate a histogram of bites on a coral with and without a macroborer 
-a<-hist(TSData$bites.cm2[yes])
-b<-hist(TSData$bites.cm2[-yes])
-# plot the histogram
-plot(a$mids, a$density, 'b')
-points(b$mids, b$density, 'b', col = 'red')
 
 
 # calculate mean porites cover
@@ -100,8 +94,6 @@ pdf('Output/Logistic plot2.pdf', 6,6,useDingbats = FALSE)
 par(mar=c(5.1,5.3,4.1,2.1))
 plot(TSData$bore.m2, TSData$bite, xlab = expression(paste('Density of '*italic(Lithophaga)*' (counts per m'^2,')')),
      ylab = 'Probability of parrotfish scar', cex.lab=1.5, cex.axis=1.5, col = 'grey', pch = 19, cex = 0.5)
-#curve(predict(mod2,data.frame(bore.cm2=x),type="resp",re.form=NA),add=TRUE, col = 'black', lwd=2) # draws a curve based on prediction from logistic regression model
-#lines(newdat$x, y,col = 'black', lwd=2)
 lines(SE$data$bore.m2, SE$data$bite, lwd=2) # prediction
 lines(SE$data$bore.m2, SE$data$ymin) # SE lines
 lines(SE$data$bore.m2, SE$data$ymax) # SE lines
@@ -116,22 +108,18 @@ boxplot(resid(mod3)~TSData$Year)
 ## Raw scaridae data
 Scaridae<- FData %>%
   filter(Site == 1| Site == 3 | Site==4) %>%
-  filter(Family=='Scaridae' & Habitat=='FR') # only put scarides on fringing reef (might want to only include greater than 150mm)
-
+  filter(Habitat=='FR') %>% # only put scarides on fringing reef 
+  filter(Total_Length>10)%>% # only include the fish >10cm because those are the ones that bite
+  filter(Taxonomy == 'Calotomus carolinus' |Taxonomy == 'Chlorurus microrhinos' |
+           Taxonomy == 'Chlorurus sordidus'|Taxonomy == 'Scarus frenatus'|Taxonomy == 'Scarus ghobban') # known corallivores
 Scaridae$Site<-as.factor(Scaridae$Site)
 levels(Scaridae$Site)<-c('LTER1','LTER3','LTER4') # make the levels the same in this dataset
 
-
-
 # total number of scarides per year and site
-Scaridae.counts<- FData %>%
-  filter(Site == 1| Site == 3 | Site==4) %>%
-  filter(Family=='Scaridae' & Habitat=='FR')%>% # only put scarides on fringing reef (might want to only include greater than 150mm)
-    group_by(Year,Site)%>%
+Scaridae.counts<- Scaridae %>%
+  group_by(Year,Site)%>%
   summarise(.,sum.fish = sum(Count)) # total number of fish
 
-Scaridae.counts$Site<-as.factor(Scaridae.counts$Site)
-levels(Scaridae.counts$Site)<-c('LTER1','LTER3','LTER4') # make the levels the same in this dataset
 
 # total number of bites per year and site
 TotalBites<-TSData%>%
@@ -171,7 +159,7 @@ Bore.algae$N[Bore.algae$Site=='LTER 4' & Bore.algae$Year==2016] = 0.59
 
 # remove the missing values for the analysis
 Bore.algae<-Bore.algae[complete.cases(Bore.algae),]
-# run a model with a polynomial
+# run a linear model 
 N.mod<-lm(bore~N, Bore.algae)
 #results
 anova(N.mod)
@@ -304,10 +292,14 @@ anova(mod.truth.bore)
 summary(mod.truth.bore)
 # p<0.001, R2 = 0.58, slope = 1.17, 2D slightly under estimated (intercept -0.19)
 
+pdf(file = 'Output/Divervs2D.pdf', width = 10, height = 5, useDingbats = FALSE)
 par(mfrow=c(1,2))
+par(mar=c(5.1,6.3,4.1,2.1))
 #plot the parrotfish scars
-plot(log(TruthData$pcount_scar+1), log(TruthData$dcount_scar+1), pch = 19, xlab = 'log(Scar photo counts +1)', ylab = 'log(Scar diver counts +1)')
-abline(1,1, lty = 2)
+plot(log(TruthData$pcount_scar+1), log(TruthData$dcount_scar+1), xlim = c(0,6), cex.lab = 1.5, cex.axis = 1.5,
+     ylim = c(0,6), pch = 19, xlab = 'log(Scar photo counts +1)', ylab = 'log(Scar diver counts +1)')
+abline(0,1, lty = 2)
+
 pred<-predict(mod.truth.scars, se.fit = TRUE)
 ind<-order(TruthData$pcount_scar)
 x<-log(TruthData$pcount_scar[ind]+1)
@@ -315,10 +307,12 @@ lines(x, pred$fit[ind])
 lines(x, pred$fit[ind]+pred$se.fit[ind])
 lines(x, pred$fit[ind]-pred$se.fit[ind])
 polygon(c(x,rev(x)),c(pred$fit[ind]+pred$se.fit[ind],rev(pred$fit[ind]-pred$se.fit[ind])),col=grey2, border = NA)
-
+legend(-0.75,6,'a)', bty='n', cex = 1.5)
 # plot the lithophagids
-plot(log(TruthData$pcount_mbb+1), log(TruthData$dcount_mbb+1), pch = 19, xlab = 'log(Lithophaga photo counts +1)', ylab = 'log(Lithophaga diver counts +1)')
-abline(1,1, lty = 2)
+plot(log(TruthData$pcount_mbb+1), log(TruthData$dcount_mbb+1), pch = 19, xlim = c(0,5), ylim = c(0,5),
+     xlab = expression(paste('log(', italic('Lithophaga'),  ' photo counts +1)')), 
+     ylab = expression(paste('log(', italic('Lithophaga'), ' diver counts +1)')), cex.lab = 1.5, cex.axis = 1.5)
+abline(0,1, lty = 2)
 pred<-predict(mod.truth.bore, se.fit = TRUE)
 ind<-order(TruthData$pcount_mbb)
 x<-log(TruthData$pcount_mbb[ind]+1)
@@ -326,4 +320,5 @@ lines(x, pred$fit[ind])
 lines(x, pred$fit[ind]+pred$se.fit[ind])
 lines(x, pred$fit[ind]-pred$se.fit[ind])
 polygon(c(x,rev(x)),c(pred$fit[ind]+pred$se.fit[ind],rev(pred$fit[ind]-pred$se.fit[ind])),col=grey2, border = NA)
-
+legend(-0.75,5,'b)', bty='n', cex = 1.5)
+dev.off()
