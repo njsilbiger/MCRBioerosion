@@ -15,6 +15,7 @@ library(boot)
 library(grDevices)
 library(jtools)
 library(car)
+library(RColorBrewer)
 
 ## load data ###############
 ### This is the time series from Mallory Rice on bites and bore holes per coral 
@@ -167,9 +168,12 @@ summary(N.mod)
 
 pdf(file = 'Output/BorervsN.pdf', width = 6, height = 6, useDingbats = FALSE)
 par(mar=c(5.1,8.3,4.1,2.1))
+j_brew_colors <- brewer.pal(n = 3, name = "Set2") # custom colors
 # make a plot of tissue N versus density of borers
 plot(Bore.algae$N, Bore.algae$bore, cex.lab = 1.5, cex.axis = 1.5, cex = 1.5,ylim = c(0,1100),
-     pch = 19, xlab = '% Tissue N', ylab =NA)
+     pch = as.numeric(Bore.algae$Site)+12, xlab = '% Tissue N', ylab =NA,col=j_brew_colors[as.factor(Bore.algae$Year)]  )
+#col =c(11,13,12,11,13,11,13,12)
+#j_brew_colors[c(1,2,3,1,2,1,2,3)]
 mtext(text=expression(paste('Mean density of', italic(' Lithophaga'))), side = 2, line = 4, cex = 1.5 )
 mtext(text=expression(paste(' (counts per m'^{2},')')), side = 2, line = 2.2, cex = 1.5 )
 
@@ -183,6 +187,8 @@ lines(xx, pred$fit+pred$se.fit, lty=2)
 lines(xx, pred$fit-pred$se.fit, lty=2)
 segments(Bore.algae$N, Bore.algae$bore+Bore.algae$bore.se,
          Bore.algae$N, Bore.algae$bore-Bore.algae$bore.se)
+legend('topleft',c('LTER 1', 'LTER 3', 'LTER 4'), pch = c(13,15,16), bty='n')
+legend('bottomright',c('2010', '2013', '2016'), pch = c(19), col = j_brew_colors[c(1,2,3)], bty='n')
 dev.off()
 
 # check for normality of residuals
