@@ -20,7 +20,7 @@ library(RColorBrewer)
 ## load data ###############
 ### This is the time series from Mallory Rice on bites and bore holes per coral 
 #TSData<-read.csv('Data/TimeSeries_Photo_Data_7.3.2018.csv')
-TSData<-read.csv('Data/TimeSeries_Photo_Data_10.25.2018.csv')
+TSData<-read.csv('Data/TimeSeries_Photo_Data_Jan2019_final.csv')
 
 ## read in coral cover data
 coverdata<-read.csv('Data/knb-lter-mcr.4_1_20151209.csv')
@@ -38,11 +38,12 @@ TSData<- TSData %>%
   filter(Site == 'LTER1'| Site == 'LTER3' | Site=="LTER4")
 
 # convert surface area from cm2 to m2
-TSData$Surface.area.m2<-TSData$Surface.area.cm2*1e-4
+#TSData$Surface.area.m2<-TSData$Surface.area.cm2*1e-4 old
+TSData$Surface.area.m2<-TSData$Ruler.surface.area..cm2.*1e-4
 
 # normalize bore hole and bite data per cm2
-TSData$bore.cm2<-TSData$No.Macroborers/TSData$Surface.area.cm2
-TSData$bites.cm2<-TSData$No.Bites/TSData$Surface.area.cm2
+TSData$bore.cm2<-TSData$No.Macroborers/TSData$Ruler.surface.area..cm2.
+TSData$bites.cm2<-TSData$No.Bites/TSData$Ruler.surface.area..cm2.
 
 #normalized to per m2
 TSData$bore.m2<-TSData$No.Macroborers/TSData$Surface.area.m2
@@ -51,6 +52,9 @@ TSData$bites.m2<-TSData$No.Bites/TSData$Surface.area.m2
 # label which corals have a macroborer
 yes<-which(TSData$bore.cm2>0)
 
+# remove the one crazy outlier that is an order of magnitude higher than everything
+remove<-which(TSData$bore.m2>30000)
+TSData<-TSData[-remove,]
 
 # calculate mean porites cover
 porites.means<- coverdata %>%
@@ -81,10 +85,10 @@ beta1<-fixef(mod2)[2]/attributes(scale(TSData$bore.m2,center=F))$"scaled:scale"
 beta0<-fixef(mod2)[1]/attributes(scale(TSData$bore.m2,center=F))$"scaled:scale"
 
 odds<-exp((beta0 +beta1*100) - (beta0 +beta1*99))
-## for every increase in borer density of 1/m2 there is a .00163% increase in the odds of being bitten
+## for every increase in borer density of 1/m2 there is a .00157% increase in the odds of being bitten
 # convert to per cm2 for easier interpretation
 odds.cm2<-10000*(odds-1)
-## for every increase in borer density of 1/cm2 there is a 163% increase in the odds of being bitten 
+## for every increase in borer density of 1/cm2 there is a 157% increase in the odds of being bitten 
 
 ## Plot the logistic regression
 newdat<-data.frame(x=seq(0,17000,length=20))
@@ -112,7 +116,8 @@ Scaridae<- FData %>%
   filter(Habitat=='FR') %>% # only put scarides on fringing reef 
   filter(Total_Length>10)%>% # only include the fish >10cm because those are the ones that bite
   filter(Taxonomy == 'Calotomus carolinus' |Taxonomy == 'Chlorurus microrhinos' |
-           Taxonomy == 'Chlorurus sordidus'|Taxonomy == 'Scarus frenatus'|Taxonomy == 'Scarus ghobban') # known corallivores
+           Taxonomy == 'Chlorurus sordidus'|Taxonomy == 'Scarus frenatus'|Taxonomy == 'Scarus ghobban') %>% # known corallivores
+  filter(Year == 2006 |Year == 2008| Year == 2010|Year == 2011|Year == 2013|Year == 2016)
 Scaridae$Site<-as.factor(Scaridae$Site)
 levels(Scaridae$Site)<-c('LTER1','LTER3','LTER4') # make the levels the same in this dataset
 
@@ -168,9 +173,9 @@ summary(N.mod)
 
 pdf(file = 'Output/BorervsN.pdf', width = 6, height = 6, useDingbats = FALSE)
 par(mar=c(5.1,8.3,4.1,2.1))
-j_brew_colors <- brewer.pal(n = 3, name = "Set2") # custom colors
+j_brew_colors <- brewer.pal(n = length(unique(TSData$Year)), name = "Set2") # custom colors
 # make a plot of tissue N versus density of borers
-plot(Bore.algae$N, Bore.algae$bore, cex.lab = 1.5, cex.axis = 1.5, cex = 1.5,ylim = c(0,1100),
+plot(Bore.algae$N, Bore.algae$bore, cex.lab = 1.5, cex.axis = 1.5, cex = 1.5,ylim = c(0,1800),
      pch = as.numeric(Bore.algae$Site)+12, xlab = '% Tissue N', ylab =NA,col=j_brew_colors[as.factor(Bore.algae$Year)]  )
 #col =c(11,13,12,11,13,11,13,12)
 #j_brew_colors[c(1,2,3,1,2,1,2,3)]
@@ -178,7 +183,7 @@ mtext(text=expression(paste('Mean density of', italic(' Lithophaga'))), side = 2
 mtext(text=expression(paste(' (counts per m'^{2},')')), side = 2, line = 2.2, cex = 1.5 )
 
 #generate new data for the fit
-xx <- seq(0,1, length=50)
+xx <- seq(0,2, length=50)
 pred<-predict(N.mod, data.frame(N=xx), se.fit = TRUE)
 # plot the predictions
 polygon(c(xx,rev(xx)),c(pred$fit+pred$se.fit,rev(pred$fit-pred$se.fit)),col=grey2)
@@ -188,7 +193,7 @@ lines(xx, pred$fit-pred$se.fit, lty=2)
 segments(Bore.algae$N, Bore.algae$bore+Bore.algae$bore.se,
          Bore.algae$N, Bore.algae$bore-Bore.algae$bore.se)
 legend('topleft',c('LTER 1', 'LTER 3', 'LTER 4'), pch = c(13,15,16), bty='n')
-legend('bottomright',c('2010', '2013', '2016'), pch = c(19), col = j_brew_colors[c(1,2,3)], bty='n')
+legend('bottomright',c('2008','2010','2011', '2013', '2016'), pch = c(19), col = j_brew_colors[c(1,2,3,4)], bty='n')
 dev.off()
 
 # check for normality of residuals
@@ -328,3 +333,9 @@ lines(x, pred$fit[ind]-pred$se.fit[ind])
 polygon(c(x,rev(x)),c(pred$fit[ind]+pred$se.fit[ind],rev(pred$fit[ind]-pred$se.fit[ind])),col=grey2, border = NA)
 legend(-0.75,5,'b)', bty='n', cex = 1.5)
 dev.off()
+
+# means
+TSData %>%
+  group_by(Site) %>%
+  summarise(mean = mean(bore.m2),
+            SE = sd(bore.m2)/sqrt(n()))
