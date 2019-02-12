@@ -84,11 +84,11 @@ SE<-effect_plot(mod3, pred = bore.m2, robust = TRUE, interval = TRUE)
 beta1<-fixef(mod2)[2]/attributes(scale(TSData$bore.m2,center=F))$"scaled:scale"
 beta0<-fixef(mod2)[1]/attributes(scale(TSData$bore.m2,center=F))$"scaled:scale"
 
-odds<-exp((beta0 +beta1*100) - (beta0 +beta1*99))
-## for every increase in borer density of 1/m2 there is a .00157% increase in the odds of being bitten
-# convert to per cm2 for easier interpretation
-odds.cm2<-10000*(odds-1)
-## for every increase in borer density of 1/cm2 there is a 157% increase in the odds of being bitten 
+#odds<-exp((beta0 +beta1*100) - (beta0 +beta1*99))
+odds<-exp((beta0 +beta1*10000) - (beta0 +beta1*1))
+
+## for every increase in borer density of 1/cm2(or 10000/m2) there is a 4.78 increase in the odds of being bitten
+# converted to per cm2 for easier interpretation
 
 ## Plot the logistic regression
 newdat<-data.frame(x=seq(0,17000,length=20))
