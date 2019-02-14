@@ -16,14 +16,12 @@ library(grDevices)
 library(jtools)
 library(car)
 library(RColorBrewer)
+library(cowplot)
 
 ## load data ###############
 ### This is the time series from Mallory Rice on bites and bore holes per coral 
 #TSData<-read.csv('Data/TimeSeries_Photo_Data_7.3.2018.csv')
 TSData<-read.csv('Data/TimeSeries_Photo_Data_Jan2019_final.csv')
-
-## read in coral cover data
-coverdata<-read.csv('Data/knb-lter-mcr.4_1_20151209.csv')
 ##read in fish data
 FData<-read.csv('Data/MCR_LTER_Annual_Fish_Survey_20160509.csv')
 # read in the CHN Data
@@ -56,15 +54,6 @@ yes<-which(TSData$bore.cm2>0)
 remove<-which(TSData$bore.m2>30000)
 TSData<-TSData[-remove,]
 
-# calculate mean porites cover
-porites.means<- coverdata %>%
-  filter(Site == 'LTER 1'| Site == 'LTER 3' | Site=="LTER 4" & Habitat =='Fringing') %>%
-  filter(Taxonomy...Substrate...Functional.Group=='Porites spp. Massive' | Taxonomy...Substrate...Functional.Group=='Porites')%>%
-  separate(col = Date,into = 'Year',sep =  "-", extra = 'drop') %>%
-  group_by(Taxonomy...Substrate...Functional.Group, Site, Habitat,Year)%>%
-  summarise(.,means = mean(Percent.Cover)) 
-  
-  
 # add a 0 or 1 for corals that do and don't have bites
 TSData$bite<-ifelse(TSData$bites.cm2>0,1,0)
 
@@ -341,3 +330,80 @@ TSData %>%
   group_by(Site) %>%
   summarise(mean = mean(bore.m2),
             SE = sd(bore.m2)/sqrt(n()))
+
+##supplemental plot 
+#scarids
+#sumamrize means and SE
+Scaridae.mean <- Scaridae %>%
+  group_by(Site, Year) %>%
+  summarise(mean = mean(Count), se = sd(Count)/sqrt(n()))
+
+# plot of Lithophaga densities across site and time
+dodge<-position_dodge(width=0.5) # this offsets the points so they don't overlap
+
+#plot
+scaridae.plot <- ggplot(Scaridae.mean, aes(x = Year, y = mean, colour = Site, group = Site, fill = Site))+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se, width=0))+
+  geom_point(size = 3, shape = 21)+
+  xlab('Year')+
+  ylab(expression(Parrotfish~"per 250"~{m}^2*~""))+
+  theme_classic(base_size=12)+
+  scale_fill_manual(values = c('black', 'gray47', 'white'))+
+  scale_colour_manual(values = c("black", "gray47", "black"))+
+  guides(colour = FALSE, fill = FALSE)
+scaridae.plot
+
+# lithophagids
+#summarize means and SE
+mbb.mean <- TSData %>%
+  group_by(Site, Year)%>%
+  summarise(mean.bore = mean(bore.m2),se.bore = sd(bore.m2)/sqrt(n()),
+            mean.bite = mean(bites.m2), se.bite = sd(bites.m2)/sqrt(n()),
+            mean.SA = mean(Surface.area.m2), se.SA = sd(Surface.area.m2)/sqrt(n()))
+
+# plot
+lithophaga.plot <- ggplot(mbb.mean, aes(x = Year, y = mean.bore, colour = Site, group = Site, fill = Site))+
+  geom_line(position = dodge)+
+  geom_errorbar(aes(ymin = mean.bore - se.bore, ymax = mean.bore + se.bore, width=0), position = dodge)+
+  geom_point(size = 3, shape = 21, position=dodge)+
+  xlab('Year')+
+  ylab(expression(italic(Lithophaga)~"per"~{m}^2*~""))+
+  theme_classic(base_size=12)+
+  theme(legend.justification=c(0,0), legend.position=c(0.6,0.55))+
+  #theme(legend.background = element_rect(colour="black", size=0.5, linetype="solid"))+
+  scale_fill_manual(values = c('black', 'gray47', 'white'))+
+  scale_colour_manual(values = c("black", "gray47", "black"))
+lithophaga.plot
+
+# plot of percent cover of massive Porites over site and time
+#porites surface area
+SA.plot <- ggplot(mbb.mean, aes(x = Year, y = mean.SA, colour = Site, group = Site, fill = Site))+
+  geom_line(position = dodge)+
+  geom_errorbar(aes(ymin = mean.SA - se.SA, ymax = mean.SA + se.SA, width=0), position = dodge)+
+  geom_point(size = 3, shape = 21, position=dodge)+
+  xlab('Year')+
+  ylab(expression("Massive"~italic(Porites)~"Cover (%)"))+
+  theme_classic(base_size=12)+
+  scale_fill_manual(values = c('black', 'gray47', 'white'))+
+  scale_colour_manual(values = c("black", "gray47", "black"))+
+  guides(colour = FALSE, fill = FALSE)
+SA.plot
+
+# Scars
+scar.plot <- ggplot(mbb.mean, aes(x = Year, y = mean.bite, colour = Site, group = Site, fill = Site))+
+  geom_line(position = dodge)+
+  geom_errorbar(aes(ymin = mean.bite - se.bite, ymax = mean.bite + se.bite, width=0), position = dodge)+
+  geom_point(size = 3, shape = 21, position=dodge)+
+  xlab('Year')+
+  ylab(expression("Parrotfish scars"~"per"~{m}^2*~""))+
+  theme_classic(base_size=12)+
+  scale_fill_manual(values = c('black', 'gray47', 'white'))+
+  scale_colour_manual(values = c("black", "gray47", "black"))+
+  guides(colour = FALSE, fill = FALSE)
+scar.plot
+
+supplemental <- plot_grid(lithophaga.plot, scar.plot, scaridae.plot, SA.plot, labels = c("A","B", "C", "D"), ncol = 2, align = 'v')
+supplemental
+
+ggsave("supplementalFig2.pdf", supplemental, path = "Output/", width = 6, height = 6, units = "in")
