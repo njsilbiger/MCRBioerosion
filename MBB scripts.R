@@ -23,9 +23,9 @@ library(cowplot)
 #TSData<-read.csv('Data/TimeSeries_Photo_Data_7.3.2018.csv')
 TSData<-read.csv('Data/TimeSeries_Photo_Data_Jan2019_final.csv')
 ##read in fish data
-FData<-read.csv('Data/MCR_LTER_Annual_Fish_Survey_20160509.csv')
+FData<-read.csv('Data/MCR_LTER_Annual_Fish_Survey_20180612.csv')
 # read in the CHN Data
-NutData<-read.csv('Data/Macroalgal CHN.csv')
+NutData<-read.csv('Data/MCR_LTER_Macroalgal_CHN_2005_to_2014_20151031.csv')
 #read in groundtruthing data
 TruthData<-read.csv('Data/groundtruth.csv')
 
@@ -58,7 +58,6 @@ TSData<-TSData[-remove,]
 TSData$bite<-ifelse(TSData$bites.cm2>0,1,0)
 
 # run a logisitic regression for probability of getting bitten with density of macroborers
-#mod1<-glm(bite~bore.m2, data=TSData, family = 'binomial')
 # scaled values and mixed effect model to account for site by year variance
 TSData$bore.m2.scaled<-as.numeric(scale(x = TSData$bore.m2, scale = TRUE))
 mod2<-glmer(bite~bore.m2.scaled+(1|Year:Site), data=TSData, family = 'binomial')
@@ -73,9 +72,8 @@ SE<-effect_plot(mod3, pred = bore.m2, robust = TRUE, interval = TRUE)
 beta1<-fixef(mod2)[2]/attributes(scale(TSData$bore.m2,center=F))$"scaled:scale"
 beta0<-fixef(mod2)[1]/attributes(scale(TSData$bore.m2,center=F))$"scaled:scale"
 
-#odds<-exp((beta0 +beta1*100) - (beta0 +beta1*99))
+#Calculate odds 
 odds<-exp((beta0 +beta1*10000) - (beta0 +beta1*1))
-
 ## for every increase in borer density of 1/cm2(or 10000/m2) there is a 4.78 increase in the odds of being bitten
 # converted to per cm2 for easier interpretation
 
@@ -84,7 +82,7 @@ newdat<-data.frame(x=seq(0,17000,length=20))
 #mygrey color
 grey2<-adjustcolor( "grey", alpha.f = 0.2)
 
-pdf('Output/Logistic plot2.pdf', 6,6,useDingbats = FALSE)
+pdf('Output/Figure3.pdf', 6,6,useDingbats = FALSE)
 par(mar=c(5.1,5.3,4.1,2.1))
 plot(TSData$bore.m2, TSData$bite, xlab = expression(paste('Density of '*italic(Lithophaga)*' (counts per m'^2,')')),
      ylab = 'Probability of parrotfish scar', cex.lab=1.5, cex.axis=1.5, col = 'grey', pch = 19, cex = 0.5)
@@ -115,7 +113,6 @@ Scaridae.counts<- Scaridae %>%
   group_by(Year,Site)%>%
   summarise(.,sum.fish = sum(Count)) # total number of fish
 
-
 # total number of bites per year and site
 TotalBites<-TSData%>%
 group_by(Year,Site)%>%
@@ -126,10 +123,7 @@ FishBites<-left_join(TotalBites, Scaridae.counts)
 # plot the relationship
 plot(FishBites$sum.fish, FishBites$mean.scars)
 
-
 #### Analysis of bioeroder density and nutrients ####
-
-
 #Filter out the 3 sites we are using and the turbanaria %N data
 Turb<-NutData %>%
   filter(Habitat =='Fringe', Genus =='Turbinaria', 
@@ -138,8 +132,6 @@ Turb<-NutData %>%
   summarise(N.mean = mean(N, na.rm=T), se.N = sd(N)/sqrt(n())) %>%
   rename(N = N.mean)
         
-  
-
 #Calculate the mean bioroder densities per site and year
 bore<-TSData %>%
   filter(Site == 'LTER1'| Site == 'LTER3' | Site=="LTER4")%>%
@@ -151,10 +143,11 @@ levels(bore$Site)<-c("LTER 1","LTER 2","LTER 3","LTER 4","LTER 5","LTER 6")
 # bring together the data frames
 Bore.algae<-left_join(bore, Turb)
 
-# bring in the rapid data points for 2016 from Tom (These were not available from the long-term LTER data set). 
+# bring in the rapid data points for 2016 from Tom Adams (These were not available from the long-term LTER data set). 
 Bore.algae$N[Bore.algae$Site=='LTER 1' & Bore.algae$Year==2016] = 0.61
 Bore.algae$N[Bore.algae$Site=='LTER 4' & Bore.algae$Year==2016] = 0.59
-Bore.algae$se.N[Bore.algae$Site=='LTER 1'|Bore.algae$Site=='LTER 4' & Bore.algae$Year==2016] = 0
+Bore.algae$se.N[Bore.algae$Site=='LTER 1' & Bore.algae$Year==2016] = 0 # se is 0 because only 1 data point
+Bore.algae$se.N[Bore.algae$Site=='LTER 4' & Bore.algae$Year==2016] = 0
 
 # remove the missing values for the analysis
 Bore.algae<-Bore.algae[complete.cases(Bore.algae),]
@@ -164,7 +157,7 @@ N.mod<-lm(bore~N, Bore.algae)
 anova(N.mod)
 summary(N.mod)
 
-pdf(file = 'Output/BorervsN.pdf', width = 6, height = 6, useDingbats = FALSE)
+pdf(file = 'Output/Figure2.pdf', width = 6, height = 6, useDingbats = FALSE)
 par(mar=c(5.1,8.3,4.1,2.1))
 j_brew_colors <- brewer.pal(n = 5, name = "Set2") # custom colors
 # make a plot of tissue N versus density of borers
@@ -187,8 +180,8 @@ lines(xx, pred$fit-pred$se.fit, lty=2)
 segments(Bore.algae$N, Bore.algae$bore+Bore.algae$bore.se,
          Bore.algae$N, Bore.algae$bore-Bore.algae$bore.se)
 # x error
-#segments(Bore.algae$N+Bore.algae$se.N, Bore.algae$bore,
-#         Bore.algae$N-Bore.algae$se.N, Bore.algae$bore)
+segments(Bore.algae$N+Bore.algae$se.N, Bore.algae$bore,
+        Bore.algae$N-Bore.algae$se.N, Bore.algae$bore)
 
 legend('topleft',c('Sites','LTER 1', 'LTER 3', 'LTER 4'), 
        pch = c(19,13,15,16), bty='n', col = c('white','black','black','black'),
@@ -207,8 +200,6 @@ MBB.mod<-lm(bore.m2^(1/4)~Site*Year , data = TSData) # need to 4th root transfor
 anova(MBB.mod)
 summary(MBB.mod)
 
-#TSData$bore.m21<-(TSData$bore.m2+1)
-#MBB.mod<-glm(bore.m21~Site*Year, family  = Gamma(link = 'log'), data = TSData) # need to 4th root transform to meet assumptions
 qqnorm(resid(MBB.mod))
 qqline(resid(MBB.mod))
 hist(resid(MBB.mod))
@@ -292,7 +283,6 @@ qqnorm(resid(mod.truth.scars))
 qqline(resid(mod.truth.scars))
 anova(mod.truth.scars)  
 summary(mod.truth.scars)
-# p<0.001, R2 = 0.58, slope = 0.59, 2D slightly over estimated (intercept = 1.69)
 
 #Lithophaga
 mod.truth.bore<-lm(log(dcount_mbb+1)~log(pcount_mbb+1), data = TruthData)
@@ -301,9 +291,9 @@ qqnorm(resid(mod.truth.bore))
 qqline(resid(mod.truth.bore))
 anova(mod.truth.bore)  
 summary(mod.truth.bore)
-# p<0.001, R2 = 0.58, slope = 1.17, 2D slightly under estimated (intercept -0.19)
 
-pdf(file = 'Output/Divervs2D.pdf', width = 10, height = 5, useDingbats = FALSE)
+# plot the results
+pdf(file = 'Output/SupplementalFig2.pdf', width = 10, height = 5, useDingbats = FALSE)
 par(mfrow=c(1,2))
 par(mar=c(5.1,6.3,4.1,2.1))
 #plot the parrotfish scars
@@ -340,7 +330,7 @@ TSData %>%
   summarise(mean = mean(bore.m2),
             SE = sd(bore.m2)/sqrt(n()))
 
-##supplemental plot 
+##supplemental plot of data over time
 #scarids
 #sumamrize means and SE
 Scaridae.mean <- Scaridae %>%
@@ -373,9 +363,9 @@ mbb.mean <- TSData %>%
 
 # plot
 lithophaga.plot <- ggplot(mbb.mean, aes(x = Year, y = mean.bore, colour = Site, group = Site, fill = Site))+
-  geom_line(position = dodge)+
-  geom_errorbar(aes(ymin = mean.bore - se.bore, ymax = mean.bore + se.bore, width=0), position = dodge)+
-  geom_point(size = 3, shape = 21, position=dodge)+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean.bore - se.bore, ymax = mean.bore + se.bore, width=0))+
+  geom_point(size = 3, shape = 21)+
   xlab('Year')+
   ylab(expression(italic(Lithophaga)~"per"~{m}^2*~""))+
   theme_classic(base_size=12)+
@@ -388,9 +378,9 @@ lithophaga.plot
 # plot of percent cover of massive Porites over site and time
 #porites surface area
 SA.plot <- ggplot(mbb.mean, aes(x = Year, y = mean.SA, colour = Site, group = Site, fill = Site))+
-  geom_line(position = dodge)+
-  geom_errorbar(aes(ymin = mean.SA - se.SA, ymax = mean.SA + se.SA, width=0), position = dodge)+
-  geom_point(size = 3, shape = 21, position=dodge)+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean.SA - se.SA, ymax = mean.SA + se.SA, width=0))+
+  geom_point(size = 3, shape = 21)+
   xlab('Year')+
   ylab(expression("Massive"~italic(Porites)~"Cover (%)"))+
   theme_classic(base_size=12)+
@@ -401,9 +391,9 @@ SA.plot
 
 # Scars
 scar.plot <- ggplot(mbb.mean, aes(x = Year, y = mean.bite, colour = Site, group = Site, fill = Site))+
-  geom_line(position = dodge)+
-  geom_errorbar(aes(ymin = mean.bite - se.bite, ymax = mean.bite + se.bite, width=0), position = dodge)+
-  geom_point(size = 3, shape = 21, position=dodge)+
+  geom_line()+
+  geom_errorbar(aes(ymin = mean.bite - se.bite, ymax = mean.bite + se.bite, width=0))+
+  geom_point(size = 3, shape = 21)+
   xlab('Year')+
   ylab(expression("Parrotfish scars"~"per"~{m}^2*~""))+
   theme_classic(base_size=12)+

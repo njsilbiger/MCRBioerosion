@@ -12,8 +12,8 @@ This material is based upon work supported by the U.S. National Science Foundati
 **Data**\
 All data files used in this analysis\
 TimeSeries_Photo_Data_Jan2019_final.csv (Lithophagid counts and coral surface area)\
-MCR_LTER_Annual_Fish_Survey_20160509.csv (Fish surveys)\
-Macroalgal CHN.csv (Macroalgae %N data)\
+MCR_LTER_Annual_Fish_Survey_20180612.csv (Fish surveys)\
+MCR_LTER_Macroalgal_CHN_2005_to_2014_20151031.csv (Macroalgae %N data)\
 groundtruth.csv (*in silico* vs *in situ* data)
 
 **Output**\
