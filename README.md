@@ -14,7 +14,9 @@ All data files used in this analysis\
 TimeSeries_Photo_Data_Jan2019_final.csv (Lithophagid counts and coral surface area)\
 MCR_LTER_Annual_Fish_Survey_20180612.csv (Fish surveys)\
 MCR_LTER_Macroalgal_CHN_2005_to_2014_20151031.csv (Macroalgae %N data)\
-groundtruth.csv (*in silico* vs *in situ* data)
+groundtruth.csv (*in silico* vs *in situ* data)\
+For MCR_LTER metadata [click here](http://mcrlter.msi.ucsb.edu/cgi-bin/showDataset.cgi?docid=knb-lter-mcr.6&displaymodule=entity&entitytype=dataTable&entityindex=1). All
+other metadata is in the metadata.csv file 
 
 **Output**\
 All figures prodced in paper
