@@ -134,8 +134,11 @@ plot(FishBites$sum.fish, FishBites$mean.scars)
 Turb<-NutData %>%
   filter(Habitat =='Fringe', Genus =='Turbinaria', 
          Site == 'LTER 1'| Site == 'LTER 3' | Site=="LTER 4") %>%
-         group_by(Site, Year) %>%
-         summarise(N = mean(N, na.rm=T)) 
+  group_by(Site, Year) %>%
+  summarise(N.mean = mean(N, na.rm=T), se.N = sd(N)/sqrt(n())) %>%
+  rename(N = N.mean)
+        
+  
 
 #Calculate the mean bioroder densities per site and year
 bore<-TSData %>%
@@ -151,6 +154,7 @@ Bore.algae<-left_join(bore, Turb)
 # bring in the rapid data points for 2016 from Tom (These were not available from the long-term LTER data set). 
 Bore.algae$N[Bore.algae$Site=='LTER 1' & Bore.algae$Year==2016] = 0.61
 Bore.algae$N[Bore.algae$Site=='LTER 4' & Bore.algae$Year==2016] = 0.59
+Bore.algae$se.N[Bore.algae$Site=='LTER 1'|Bore.algae$Site=='LTER 4' & Bore.algae$Year==2016] = 0
 
 # remove the missing values for the analysis
 Bore.algae<-Bore.algae[complete.cases(Bore.algae),]
@@ -179,8 +183,13 @@ polygon(c(xx,rev(xx)),c(pred$fit+pred$se.fit,rev(pred$fit-pred$se.fit)),col=grey
 lines(xx, predict(N.mod, data.frame(N=xx)), lwd = 2)
 lines(xx, pred$fit+pred$se.fit, lty=2)
 lines(xx, pred$fit-pred$se.fit, lty=2)
+# y error
 segments(Bore.algae$N, Bore.algae$bore+Bore.algae$bore.se,
          Bore.algae$N, Bore.algae$bore-Bore.algae$bore.se)
+# x error
+#segments(Bore.algae$N+Bore.algae$se.N, Bore.algae$bore,
+#         Bore.algae$N-Bore.algae$se.N, Bore.algae$bore)
+
 legend('topleft',c('Sites','LTER 1', 'LTER 3', 'LTER 4'), 
        pch = c(19,13,15,16), bty='n', col = c('white','black','black','black'),
        text.font = c(2,1,1,1))
@@ -406,4 +415,4 @@ scar.plot
 supplemental <- plot_grid(lithophaga.plot, scar.plot, scaridae.plot, SA.plot, labels = c("A","B", "C", "D"), ncol = 2, align = 'v')
 supplemental
 
-ggsave("supplementalFig2.pdf", supplemental, path = "Output/", width = 6, height = 6, units = "in")
+ggsave("supplementalFig1.pdf", supplemental, path = "Output/", width = 6, height = 6, units = "in")
