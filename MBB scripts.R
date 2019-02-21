@@ -120,8 +120,8 @@ ndata <- bind_cols(ndata, setNames(as_tibble(predict(mod3, ndata, se.fit = TRUE)
 ## create the interval and backtransform
 ndata <- mutate(ndata,
                 fit_resp  = ilink(fit_link),
-                right_upr = ilink(fit_link + (2 * se_link)),
-                right_lwr = ilink(fit_link - (2 * se_link)))
+                right_upr = ilink(fit_link + (se_link)),
+                right_lwr = ilink(fit_link - (se_link)))
 ## show
 plt + geom_ribbon(data = ndata,
                   aes(ymin = right_lwr, ymax = right_upr),
