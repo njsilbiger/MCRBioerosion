@@ -1,6 +1,6 @@
 #### Logistic regression testing the probability of a parrotfish bite based on MBB density ###
 #### Script by Nyssa Silbiger #####
-### Edited on 11/16 2018 #########
+### Edited on 2/21/19 #########
 ###############################
 
 
@@ -13,8 +13,6 @@ library(lme4)
 library(lmerTest)
 library(boot)
 library(grDevices)
-library(jtools)
-library(car)
 library(RColorBrewer)
 library(cowplot)
 
@@ -63,10 +61,6 @@ TSData$bore.m2.scaled<-as.numeric(scale(x = TSData$bore.m2, scale = TRUE))
 mod2<-glmer(bite~bore.m2.scaled+(1|Year:Site), data=TSData, family = 'binomial')
 summary(mod2)
 
-# #get robust standard errors and unscaled data for the plot
-# mod3<-glmer(bite~ bore.m2+(1|Year:Site), data=TSData, family = 'binomial')
-# SE<-effect_plot(mod3, pred = bore.m2, robust = TRUE, interval = TRUE)
-
 #calculate the odds ratio
 # back transform the scaled coefs
 beta1<-fixef(mod2)[2]/attributes(scale(TSData$bore.m2,center=F))$"scaled:scale"
@@ -78,20 +72,8 @@ odds<-exp((beta0 +beta1*10000) - (beta0 +beta1*1))
 # converted to per cm2 for easier interpretation
 
 ## Plot the logistic regression
-# newdat<-data.frame(x=seq(0,17000,length=20))
 # #mygrey color
  grey2<-adjustcolor( "grey", alpha.f = 0.2)
-# 
-# pdf('Output/Figure3.pdf', 6,6,useDingbats = FALSE)
-# par(mar=c(5.1,5.3,4.1,2.1))
-# plot(TSData$bore.m2, TSData$bite, xlab = expression(paste('Density of '*italic(Lithophaga)*' (counts per m'^2,')')),
-#      ylab = 'Probability of parrotfish scar', cex.lab=1.5, cex.axis=1.5, col = 'grey', pch = 19, cex = 0.5)
-# lines(SE$data$bore.m2, SE$data$bite, lwd=2) # prediction
-# lines(SE$data$bore.m2, SE$data$ymin) # SE lines
-# lines(SE$data$bore.m2, SE$data$ymax) # SE lines
-# # fill in with grey polygon
-# polygon(c(SE$data$bore.m2,rev(SE$data$bore.m2)),c(SE$data$ymax,rev(SE$data$ymin)),col=grey2, border = NA)
-# dev.off()
 
 # Logistic plot following suggestions from https://www.fromthebottomoftheheap.net/2018/12/10/confidence-intervals-for-glms/
 mod3<-glm(bite~ bore.m2, data=TSData, family = 'binomial')
@@ -133,7 +115,7 @@ plt + geom_ribbon(data = ndata,
 boxplot(resid(mod3)~TSData$Site)
 boxplot(resid(mod3)~TSData$Year)
 
-## Raw scaridae data
+### Raw scaridae data #####
 Scaridae<- FData %>%
   filter(Site == 1| Site == 3 | Site==4) %>%
   filter(Habitat=='FR') %>% # only put scarides on fringing reef 
@@ -179,12 +161,6 @@ levels(bore$Site)<-c("LTER 1","LTER 2","LTER 3","LTER 4","LTER 5","LTER 6")
 # bring together the data frames
 Bore.algae<-left_join(bore, Turb)
 
-# bring in the rapid data points for 2016 from Tom Adams (These were not available from the long-term LTER data set). 
-Bore.algae$N[Bore.algae$Site=='LTER 1' & Bore.algae$Year==2016] = 0.61
-Bore.algae$N[Bore.algae$Site=='LTER 4' & Bore.algae$Year==2016] = 0.59
-Bore.algae$se.N[Bore.algae$Site=='LTER 1' & Bore.algae$Year==2016] = 0 # se is 0 because only 1 data point
-Bore.algae$se.N[Bore.algae$Site=='LTER 4' & Bore.algae$Year==2016] = 0
-
 # remove the missing values for the analysis
 Bore.algae<-Bore.algae[complete.cases(Bore.algae),]
 # run a linear model 
@@ -222,7 +198,7 @@ segments(Bore.algae$N+Bore.algae$se.N, Bore.algae$bore,
 legend('topleft',c('Sites','LTER 1', 'LTER 3', 'LTER 4'), 
        pch = c(19,13,15,16), bty='n', col = c('white','black','black','black'),
        text.font = c(2,1,1,1))
-legend('bottomright',c('2008','2010','2011', '2013', '2016'), pch = c(19), col = j_brew_colors[c(1,2,3,4,5)], bty='n')
+legend('bottomright',c('2008','2010','2011', '2013'), pch = c(19), col = j_brew_colors[c(1,2,3,4)], bty='n')
 dev.off()
 
 # check for normality of residuals
@@ -310,7 +286,7 @@ qqline(resid(Porites.mod))
 hist(resid(Porites.mod))
 
 
-### Ground truth the 2D to 3D counts
+### Ground truth the 2D to 3D counts #####
 # simple linear regression between the 2D and 3D counts
 # scars
 mod.truth.scars<-lm(log(dcount_scar+1)~log(pcount_scar+1), data = TruthData)
