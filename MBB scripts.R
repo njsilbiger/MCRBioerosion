@@ -63,9 +63,9 @@ TSData$bore.m2.scaled<-as.numeric(scale(x = TSData$bore.m2, scale = TRUE))
 mod2<-glmer(bite~bore.m2.scaled+(1|Year:Site), data=TSData, family = 'binomial')
 summary(mod2)
 
-#get robust standard errors and unscaled data for the plot
-mod3<-glmer(bite~ bore.m2+(1|Year:Site), data=TSData, family = 'binomial')
-SE<-effect_plot(mod3, pred = bore.m2, robust = TRUE, interval = TRUE)
+# #get robust standard errors and unscaled data for the plot
+# mod3<-glmer(bite~ bore.m2+(1|Year:Site), data=TSData, family = 'binomial')
+# SE<-effect_plot(mod3, pred = bore.m2, robust = TRUE, interval = TRUE)
 
 #calculate the odds ratio
 # back transform the scaled coefs
@@ -78,20 +78,56 @@ odds<-exp((beta0 +beta1*10000) - (beta0 +beta1*1))
 # converted to per cm2 for easier interpretation
 
 ## Plot the logistic regression
-newdat<-data.frame(x=seq(0,17000,length=20))
-#mygrey color
-grey2<-adjustcolor( "grey", alpha.f = 0.2)
+# newdat<-data.frame(x=seq(0,17000,length=20))
+# #mygrey color
+ grey2<-adjustcolor( "grey", alpha.f = 0.2)
+# 
+# pdf('Output/Figure3.pdf', 6,6,useDingbats = FALSE)
+# par(mar=c(5.1,5.3,4.1,2.1))
+# plot(TSData$bore.m2, TSData$bite, xlab = expression(paste('Density of '*italic(Lithophaga)*' (counts per m'^2,')')),
+#      ylab = 'Probability of parrotfish scar', cex.lab=1.5, cex.axis=1.5, col = 'grey', pch = 19, cex = 0.5)
+# lines(SE$data$bore.m2, SE$data$bite, lwd=2) # prediction
+# lines(SE$data$bore.m2, SE$data$ymin) # SE lines
+# lines(SE$data$bore.m2, SE$data$ymax) # SE lines
+# # fill in with grey polygon
+# polygon(c(SE$data$bore.m2,rev(SE$data$bore.m2)),c(SE$data$ymax,rev(SE$data$ymin)),col=grey2, border = NA)
+# dev.off()
 
-pdf('Output/Figure3.pdf', 6,6,useDingbats = FALSE)
-par(mar=c(5.1,5.3,4.1,2.1))
-plot(TSData$bore.m2, TSData$bite, xlab = expression(paste('Density of '*italic(Lithophaga)*' (counts per m'^2,')')),
-     ylab = 'Probability of parrotfish scar', cex.lab=1.5, cex.axis=1.5, col = 'grey', pch = 19, cex = 0.5)
-lines(SE$data$bore.m2, SE$data$bite, lwd=2) # prediction
-lines(SE$data$bore.m2, SE$data$ymin) # SE lines
-lines(SE$data$bore.m2, SE$data$ymax) # SE lines
-# fill in with grey polygon
-polygon(c(SE$data$bore.m2,rev(SE$data$bore.m2)),c(SE$data$ymax,rev(SE$data$ymin)),col=grey2, border = NA)
-dev.off()
+# Logistic plot following suggestions from https://www.fromthebottomoftheheap.net/2018/12/10/confidence-intervals-for-glms/
+mod3<-glm(bite~ bore.m2, data=TSData, family = 'binomial')
+
+## some data to predict at: 1000 values over the range of leafHeight
+ndata <- with(TSData, data_frame(bore.m2 = seq(min(bore.m2), max(bore.m2),
+                                               length = 1000)))
+## add the fitted values by predicting from the model for the new data
+ndata <-  add_column(ndata, fit = predict(mod3, newdata = ndata, type = 'response'))
+TSData$bite_yn<-as.factor(ifelse(TSData$bite==1, 'Yes','No')) # for the rug in the plot
+## plot it
+plt <- ggplot(ndata, aes(x = bore.m2, y = fit)) +
+  geom_line() +
+  geom_rug(aes(y = bite, colour = bite_yn), data = TSData) +
+  scale_colour_discrete(name = 'Scar') +
+  labs(x = expression(paste('Density of '*italic(Lithophaga)*' (counts per m'^2,')')), 
+       y = 'Probability of parrotfish scar')+
+  theme(text = element_text(size=20))
+plt
+
+## grad the inverse link function
+ilink <- family(mod3)$linkinv
+## add fit and se.fit on the **link** scale
+ndata <- bind_cols(ndata, setNames(as_tibble(predict(mod3, ndata, se.fit = TRUE)[1:2]),
+                                   c('fit_link','se_link')))
+## create the interval and backtransform
+ndata <- mutate(ndata,
+                fit_resp  = ilink(fit_link),
+                right_upr = ilink(fit_link + (2 * se_link)),
+                right_lwr = ilink(fit_link - (2 * se_link)))
+## show
+plt + geom_ribbon(data = ndata,
+                  aes(ymin = right_lwr, ymax = right_upr),
+                  alpha = 0.1)+
+  ggsave(filename = 'Output/Figure3_b.pdf', device = 'pdf', width = 7, height = 6)
+
 
 ## assumptions of homoscedasticity
 boxplot(resid(mod3)~TSData$Site)
