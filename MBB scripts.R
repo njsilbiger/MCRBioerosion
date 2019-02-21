@@ -126,7 +126,7 @@ ndata <- mutate(ndata,
 plt + geom_ribbon(data = ndata,
                   aes(ymin = right_lwr, ymax = right_upr),
                   alpha = 0.1)+
-  ggsave(filename = 'Output/Figure3_b.pdf', device = 'pdf', width = 7, height = 6)
+  ggsave(filename = 'Output/Figure3.pdf', device = 'pdf', width = 7, height = 6)
 
 
 ## assumptions of homoscedasticity
