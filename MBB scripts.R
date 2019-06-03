@@ -15,6 +15,7 @@ library(boot)
 library(grDevices)
 library(RColorBrewer)
 library(cowplot)
+library(car)
 
 ## load data ###############
 ### This is the time series from Mallory Rice on bites and bore holes per coral 
@@ -120,7 +121,7 @@ Scaridae<- FData %>%
   filter(Site == 1| Site == 3 | Site==4) %>%
   filter(Habitat=='FR') %>% # only put scarides on fringing reef 
   filter(Total_Length>10)%>% # only include the fish >10cm because those are the ones that bite
-  filter(Taxonomy == 'Calotomus carolinus' |Taxonomy == 'Chlorurus microrhinos' |
+  filter(Taxonomy == 'Chlorurus microrhinos' |
            Taxonomy == 'Chlorurus sordidus'|Taxonomy == 'Scarus frenatus'|Taxonomy == 'Scarus ghobban') %>% # known corallivores
   filter(Year == 2006 |Year == 2008| Year == 2010|Year == 2011|Year == 2013|Year == 2016)
 Scaridae$Site<-as.factor(Scaridae$Site)
