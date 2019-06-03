@@ -183,12 +183,17 @@ mtext(text=expression(paste(' (counts per m'^{2},')')), side = 2, line = 2.2, ce
 
 #generate new data for the fit
 xx <- seq(0,2, length=50)
-pred<-predict(N.mod, data.frame(N=xx), se.fit = TRUE)
+pred<-predict(N.mod, data.frame(N=xx), se.fit = TRUE, interval="confidence",
+              level = 0.95)
 # plot the predictions
-polygon(c(xx,rev(xx)),c(pred$fit+pred$se.fit,rev(pred$fit-pred$se.fit)),col=grey2)
+#polygon(c(xx,rev(xx)),c(pred$fit+pred$se.fit,rev(pred$fit-pred$se.fit)),col=grey2)
+polygon(c(xx,rev(xx)),c(pred$fit[,2],rev(pred$fit[,3])),col=grey2)
 lines(xx, predict(N.mod, data.frame(N=xx)), lwd = 2)
-lines(xx, pred$fit+pred$se.fit, lty=2)
-lines(xx, pred$fit-pred$se.fit, lty=2)
+lines(xx, pred$fit[,2], lty=2)
+lines(xx, pred$fit[,3], lty=2)
+
+#lines(xx, pred$fit+pred$se.fit, lty=2)
+#lines(xx, pred$fit-pred$se.fit, lty=2)
 # y error
 segments(Bore.algae$N, Bore.algae$bore+Bore.algae$bore.se,
          Bore.algae$N, Bore.algae$bore-Bore.algae$bore.se)
