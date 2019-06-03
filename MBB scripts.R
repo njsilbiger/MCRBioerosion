@@ -16,6 +16,7 @@ library(grDevices)
 library(RColorBrewer)
 library(cowplot)
 library(car)
+library(scales)
 
 ## load data ###############
 ### This is the time series from Mallory Rice on bites and bore holes per coral 
@@ -103,8 +104,8 @@ ndata <- bind_cols(ndata, setNames(as_tibble(predict(mod3, ndata, se.fit = TRUE)
 ## create the interval and backtransform
 ndata <- mutate(ndata,
                 fit_resp  = ilink(fit_link),
-                right_upr = ilink(fit_link + (se_link)),
-                right_lwr = ilink(fit_link - (se_link)))
+                right_upr = ilink(fit_link + 2*(se_link)),
+                right_lwr = ilink(fit_link - 2*(se_link)))
 ## show
 logisiticplot<-plt + geom_ribbon(data = ndata,
                   aes(ymin = right_lwr, ymax = right_upr),
@@ -117,7 +118,8 @@ boxplot(resid(mod3)~TSData$Year)
 
 ## add analysis of density of borers versus scars when both borers and bites present
 not0<-which(TSData$bore.m2>0 & TSData$bites.m2>0) # remove the 0s
-bore.density.mod<-lm(log(TSData$bites.m2[not0])~log(TSData$bore.m2[not0]))
+bore.density.mod<-lmer(log(bites.m2)~log(bore.m2)+
+                         (1|Year:Site), data = TSData[not0,])
 anova(bore.density.mod)
 summary(bore.density.mod)
 qqnorm(resid(bore.density.mod))
@@ -132,7 +134,7 @@ density.plot<-ggplot(TSData[not0,], aes(x = bore.m2, y = bites.m2))+
   scale_y_continuous(trans='log',breaks = trans_breaks('log10', function(x) 10^x),
                      labels = trans_format('log10', math_format(10^.x)))+
 #    breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))+
-  geom_smooth(method='lm',formula=y~x)+
+  geom_smooth(method='lm',formula=y~x, color = 'black')+
  # coord_trans(x="log", y="log")+
  labs(x = expression(paste('Density of '*italic(Lithophaga)*' (counts per m'^2,')')), 
   y = expression(paste('Density of parrotfish scar (counts per m'^2,')')))+
