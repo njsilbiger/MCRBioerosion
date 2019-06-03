@@ -92,7 +92,7 @@ plt <- ggplot(ndata, aes(x = bore.m2, y = fit)) +
   scale_colour_discrete(name = 'Scar') +
   labs(x = expression(paste('Density of '*italic(Lithophaga)*' (counts per m'^2,')')), 
        y = 'Probability of parrotfish scar')+
-  theme(text = element_text(size=20))
+  theme(text = element_text(size=16))
 plt
 
 ## grad the inverse link function
@@ -106,17 +106,45 @@ ndata <- mutate(ndata,
                 right_upr = ilink(fit_link + (se_link)),
                 right_lwr = ilink(fit_link - (se_link)))
 ## show
-plt + geom_ribbon(data = ndata,
+logisiticplot<-plt + geom_ribbon(data = ndata,
                   aes(ymin = right_lwr, ymax = right_upr),
-                  alpha = 0.1)+
-  ggsave(filename = 'Output/Figure3.pdf', device = 'pdf', width = 7, height = 6)
-
+                  alpha = 0.1)
+  
 
 ## assumptions of homoscedasticity
 boxplot(resid(mod3)~TSData$Site)
 boxplot(resid(mod3)~TSData$Year)
 
-### Raw scaridae data #####
+## add analysis of density of borers versus scars when both borers and bites present
+not0<-which(TSData$bore.m2>0 & TSData$bites.m2>0) # remove the 0s
+bore.density.mod<-lm(log(TSData$bites.m2[not0])~log(TSData$bore.m2[not0]))
+anova(bore.density.mod)
+summary(bore.density.mod)
+qqnorm(resid(bore.density.mod))
+qqline(resid(bore.density.mod))
+
+density.plot<-ggplot(TSData[not0,], aes(x = bore.m2, y = bites.m2))+
+  geom_point()+
+  scale_x_continuous(trans='log',
+                     breaks = trans_breaks('log10', function(x) 10^x),
+                     labels = trans_format('log10', math_format(10^.x)))+
+ #   breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))+
+  scale_y_continuous(trans='log',breaks = trans_breaks('log10', function(x) 10^x),
+                     labels = trans_format('log10', math_format(10^.x)))+
+#    breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))+
+  geom_smooth(method='lm',formula=y~x)+
+ # coord_trans(x="log", y="log")+
+ labs(x = expression(paste('Density of '*italic(Lithophaga)*' (counts per m'^2,')')), 
+  y = expression(paste('Density of parrotfish scar (counts per m'^2,')')))+
+  #theme_bw()+
+  theme(text = element_text(size=16))
+
+# plot the logistic and density plots next to eachother
+borevsscar.plot<-plot_grid(logisiticplot, density.plot, labels = c("A", "B"))
+ggsave(plot = borevsscar.plot, filename = 'Output/Figure3.pdf', 
+       device = 'pdf', width = 10, height = 5)
+
+## Raw scaridae data #####
 Scaridae<- FData %>%
   filter(Site == 1| Site == 3 | Site==4) %>%
   filter(Habitat=='FR') %>% # only put scarides on fringing reef 
@@ -424,3 +452,5 @@ supplemental <- plot_grid(lithophaga.plot, scar.plot, scaridae.plot, SA.plot, la
 supplemental
 
 ggsave("supplementalFig1.pdf", supplemental, path = "Output/", width = 6, height = 6, units = "in")
+
+
