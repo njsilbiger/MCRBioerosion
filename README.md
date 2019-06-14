@@ -19,6 +19,6 @@ For MCR_LTER metadata [click here](http://mcrlter.msi.ucsb.edu/cgi-bin/showDatas
 other metadata is in the metadata.csv file 
 
 **Output**\
-All figures prodced in paper
+All figures produced in paper
 
 **MBB scripts.R** is the script use for data analysis
