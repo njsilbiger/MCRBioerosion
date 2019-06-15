@@ -407,7 +407,7 @@ mbb.mean <- TSData %>%
   group_by(Site, Year)%>%
   summarise(mean.bore = mean(bore.m2),se.bore = sd(bore.m2)/sqrt(n()),
             mean.bite = mean(bites.m2), se.bite = sd(bites.m2)/sqrt(n()),
-            mean.SA = mean(Surface.area.m2), se.SA = sd(Surface.area.m2)/sqrt(n()))
+            mean.SA = mean(PoritesCover), se.SA = sd(PoritesCover)/sqrt(n()))
 
 # plot
 lithophaga.plot <- ggplot(mbb.mean, aes(x = Year, y = mean.bore, colour = Site, group = Site, fill = Site))+
