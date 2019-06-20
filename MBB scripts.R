@@ -59,17 +59,19 @@ TSData$bite<-ifelse(TSData$bites.cm2>0,1,0)
 
 # run a logisitic regression for probability of getting bitten with density of macroborers
 # scaled values and mixed effect model to account for site by year variance
-TSData$bore.m2.scaled<-as.numeric(scale(x = TSData$bore.m2, scale = TRUE))
-mod2<-glmer(bite~bore.m2.scaled+(1|Year:Site), data=TSData, family = 'binomial')
+TSData$bore.cm2.scaled<-as.numeric(scale(x = TSData$bore.cm2, scale = TRUE))
+mod2<-glmer(bite~bore.cm2.scaled+(1|Year:Site), data=TSData, family = 'binomial')
 summary(mod2)
 
 #calculate the odds ratio
 # back transform the scaled coefs
-beta1<-fixef(mod2)[2]/attributes(scale(TSData$bore.m2,center=F))$"scaled:scale"
-beta0<-fixef(mod2)[1]/attributes(scale(TSData$bore.m2,center=F))$"scaled:scale"
+beta1<-fixef(mod2)[2]/attributes(scale(TSData$bore.cm2,center=F))$"scaled:scale"
+beta0<-fixef(mod2)[1]/attributes(scale(TSData$bore.cm2,center=F))$"scaled:scale"
 
-#Calculate odds 
-odds<-exp((beta0 +beta1*10000) - (beta0 +beta1*1))
+#Calculate odds of going from 1 to 2 per cm squared
+odds<-exp((beta0 +beta1*2) - (beta0 +beta1*1))
+
+
 ## for every increase in borer density of 1/cm2(or 10000/m2) there is a 4.78 increase in the odds of being bitten
 # converted to per cm2 for easier interpretation
 
@@ -78,20 +80,20 @@ odds<-exp((beta0 +beta1*10000) - (beta0 +beta1*1))
  grey2<-adjustcolor( "grey", alpha.f = 0.2)
 
 # Logistic plot following suggestions from https://www.fromthebottomoftheheap.net/2018/12/10/confidence-intervals-for-glms/
-mod3<-glm(bite~ bore.m2, data=TSData, family = 'binomial')
+mod3<-glm(bite~ bore.cm2, data=TSData, family = 'binomial')
 
 ## some data to predict at: 1000 values over the range of leafHeight
-ndata <- with(TSData, data_frame(bore.m2 = seq(min(bore.m2), max(bore.m2),
+ndata <- with(TSData, data_frame(bore.cm2 = seq(min(bore.cm2), max(bore.cm2),
                                                length = 1000)))
 ## add the fitted values by predicting from the model for the new data
 ndata <-  add_column(ndata, fit = predict(mod3, newdata = ndata, type = 'response'))
 TSData$bite_yn<-as.factor(ifelse(TSData$bite==1, 'Yes','No')) # for the rug in the plot
 ## plot it
-plt <- ggplot(ndata, aes(x = bore.m2, y = fit)) +
+plt <- ggplot(ndata, aes(x = bore.cm2, y = fit)) +
   geom_line() +
   geom_rug(aes(y = bite, colour = bite_yn), data = TSData) +
   scale_colour_discrete(name = 'Scar') +
-  labs(x = expression(paste('Density of '*italic(Lithophaga)*' (counts per m'^2,')')), 
+  labs(x = expression(paste('Density of '*italic(Lithophaga)*' (counts per cm'^2,')')), 
        y = 'Probability of parrotfish scar')+
   theme(text = element_text(size=16))
 plt
@@ -117,27 +119,28 @@ boxplot(resid(mod3)~TSData$Site)
 boxplot(resid(mod3)~TSData$Year)
 
 ## add analysis of density of borers versus scars when both borers and bites present
-not0<-which(TSData$bore.m2>0 & TSData$bites.m2>0) # remove the 0s
-bore.density.mod<-lmer(log(bites.m2)~log(bore.m2)+
+not0<-which(TSData$bore.cm2>0 & TSData$bites.cm2>0) # remove the 0s
+bore.density.mod<-lmer(log(bites.cm2)~log(bore.cm2)+
                          (1|Year:Site), data = TSData[not0,])
 anova(bore.density.mod)
 summary(bore.density.mod)
 qqnorm(resid(bore.density.mod))
 qqline(resid(bore.density.mod))
 
-density.plot<-ggplot(TSData[not0,], aes(x = bore.m2, y = bites.m2))+
+density.plot<-ggplot(TSData[not0,], aes(x = bore.cm2, y = bites.cm2))+
   geom_point()+
   scale_x_continuous(trans='log',
                      breaks = trans_breaks('log10', function(x) 10^x),
-                     labels = trans_format('log10', math_format(10^.x)))+
+                     labels = trans_format('log10', math_format(10^.x))
+                    )+
  #   breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))+
   scale_y_continuous(trans='log',breaks = trans_breaks('log10', function(x) 10^x),
                      labels = trans_format('log10', math_format(10^.x)))+
 #    breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))+
   geom_smooth(method='lm',formula=y~x, color = 'black')+
  # coord_trans(x="log", y="log")+
- labs(x = expression(paste('Density of '*italic(Lithophaga)*' (counts per m'^2,')')), 
-  y = expression(paste('Density of parrotfish scar (counts per m'^2,')')))+
+ labs(x = expression(paste('Density of '*italic(Lithophaga)*' (counts per cm'^2,')')), 
+  y = expression(paste('Density of parrotfish scar (counts per cm'^2,')')))+
   #theme_bw()+
   theme(text = element_text(size=16))
 
@@ -185,7 +188,7 @@ Turb<-NutData %>%
 bore<-TSData %>%
   filter(Site == 'LTER1'| Site == 'LTER3' | Site=="LTER4")%>%
   group_by(Site, Year) %>%
-  summarise(bore = mean(bore.m2),  bore.se = sd(bore.m2)/sqrt(n()))
+  summarise(bore = mean(bore.cm2),  bore.se = sd(bore.cm2)/sqrt(n()))
 #rename the levels
 levels(bore$Site)<-c("LTER 1","LTER 2","LTER 3","LTER 4","LTER 5","LTER 6")
 
@@ -204,12 +207,12 @@ pdf(file = 'Output/Figure2.pdf', width = 6, height = 6, useDingbats = FALSE)
 par(mar=c(5.1,8.3,4.1,2.1))
 j_brew_colors <- brewer.pal(n = 5, name = "Set2") # custom colors
 # make a plot of tissue N versus density of borers
-plot(Bore.algae$N, Bore.algae$bore, cex.lab = 1.5, cex.axis = 1.5, cex = 2,ylim = c(0,1800),
+plot(Bore.algae$N, Bore.algae$bore, cex.lab = 1.5, cex.axis = 1.5, cex = 2,ylim = c(0,.20),
      pch = as.numeric(Bore.algae$Site)+12, xlab = '% Tissue N', ylab =NA,col=j_brew_colors[as.factor(Bore.algae$Year)]  )
 #col =c(11,13,12,11,13,11,13,12)
 #j_brew_colors[c(1,2,3,1,2,1,2,3)]
 mtext(text=expression(paste('Mean density of', italic(' Lithophaga'))), side = 2, line = 4, cex = 1.5 )
-mtext(text=expression(paste(' (counts per m'^{2},')')), side = 2, line = 2.2, cex = 1.5 )
+mtext(text=expression(paste(' (counts per cm'^{2},')')), side = 2, line = 2.2, cex = 1.5 )
 
 #generate new data for the fit
 xx <- seq(0,2, length=50)
@@ -244,7 +247,7 @@ qqline(resid(N.mod))
 
 ## TWo way ANOVAS for lithophaga densities, parrotfish biomass, and percent cover of massive porites by site and year
 #Lithophaga
-MBB.mod<-lm(bore.m2^(1/4)~Site*Year , data = TSData) # need to 4th root transform to meet assumptions
+MBB.mod<-lm(bore.cm2^(1/4)~Site*Year , data = TSData) # need to 4th root transform to meet assumptions
 anova(MBB.mod)
 summary(MBB.mod)
 
@@ -254,7 +257,7 @@ hist(resid(MBB.mod))
 # Not good... very zero-inflated and not normal
 
 #scars
-Scar.mod<-lm(log(bites.m2+1)~Site*Year , data = TSData) 
+Scar.mod<-lm(log(bites.cm2+1)~Site*Year , data = TSData) 
 anova(Scar.mod)
 summary(Scar.mod)
 
@@ -267,7 +270,7 @@ hist(resid(Scar.mod))
 TSData$bore<-ifelse(TSData$bore.cm2>0,1,0) # make a column of 1's and 0's 
 
 MBB.mod1 <- glm(bore ~ Site*Year, data = TSData, family = binomial(link = logit)) # the logisitic part (0/1)
-MBB.mod2 <- glm(bore.m2 ~ Site*Year, data = subset(TSData, bore == 1), family = Gamma(link = log)) # The gamma part (>0)
+MBB.mod2 <- glm(bore.cm2 ~ Site*Year, data = subset(TSData, bore == 1), family = Gamma(link = log)) # The gamma part (>0)
 
 #qqnorm plots
 qqnorm(resid(MBB.mod2))
@@ -289,7 +292,7 @@ summary(MBB.mod2)
 
 #scars
 Scar.mod1 <- glm(bite ~ Site*Year, data = TSData, family = binomial(link = logit)) # the logisitic part (0/1)
-Scar.mod2 <- glm(bites.m2 ~ Site*Year, data = subset(TSData, bite == 1), family = Gamma(link = log)) # The gamma part (>0)
+Scar.mod2 <- glm(bites.cm2 ~ Site*Year, data = subset(TSData, bite == 1), family = Gamma(link = log)) # The gamma part (>0)
 #check the residuals
 qqnorm(resid(Scar.mod2))
 qqline(resid(Scar.mod2))
@@ -375,8 +378,8 @@ dev.off()
 # means
 TSData %>%
   group_by(Site) %>%
-  summarise(mean = mean(bore.m2),
-            SE = sd(bore.m2)/sqrt(n()))
+  summarise(mean = mean(bore.cm2),
+            SE = sd(bore.cm2)/sqrt(n()))
 
 ##supplemental plot of data over time
 #scarids
@@ -405,8 +408,8 @@ scaridae.plot
 #summarize means and SE
 mbb.mean <- TSData %>%
   group_by(Site, Year)%>%
-  summarise(mean.bore = mean(bore.m2),se.bore = sd(bore.m2)/sqrt(n()),
-            mean.bite = mean(bites.m2), se.bite = sd(bites.m2)/sqrt(n()),
+  summarise(mean.bore = mean(bore.cm2),se.bore = sd(bore.cm2)/sqrt(n()),
+            mean.bite = mean(bites.cm2), se.bite = sd(bites.cm2)/sqrt(n()),
             mean.SA = mean(PoritesCover), se.SA = sd(PoritesCover)/sqrt(n()))
 
 # plot
@@ -415,7 +418,7 @@ lithophaga.plot <- ggplot(mbb.mean, aes(x = Year, y = mean.bore, colour = Site, 
   geom_errorbar(aes(ymin = mean.bore - se.bore, ymax = mean.bore + se.bore, width=0))+
   geom_point(size = 3, shape = 21)+
   xlab('Year')+
-  ylab(expression(italic(Lithophaga)~"per"~{m}^2*~""))+
+  ylab(expression(italic(Lithophaga)~"per"~{cm}^2*~""))+
   theme_classic(base_size=12)+
   theme(legend.justification=c(0,0), legend.position=c(0.6,0.55))+
   #theme(legend.background = element_rect(colour="black", size=0.5, linetype="solid"))+
@@ -443,7 +446,7 @@ scar.plot <- ggplot(mbb.mean, aes(x = Year, y = mean.bite, colour = Site, group 
   geom_errorbar(aes(ymin = mean.bite - se.bite, ymax = mean.bite + se.bite, width=0))+
   geom_point(size = 3, shape = 21)+
   xlab('Year')+
-  ylab(expression("Parrotfish scars"~"per"~{m}^2*~""))+
+  ylab(expression("Parrotfish scars"~"per"~{cm}^2*~""))+
   theme_classic(base_size=12)+
   scale_fill_manual(values = c('black', 'gray47', 'white'))+
   scale_colour_manual(values = c("black", "gray47", "black"))+
