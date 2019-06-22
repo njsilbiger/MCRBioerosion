@@ -1,4 +1,5 @@
-﻿# Macroborer presence on corals increases with nutrient input and promotes parrotfish corallivory
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3252571.svg)](https://doi.org/10.5281/zenodo.3252571)
+# Macroborer presence on corals increases with nutrient input and promotes parrotfish corallivory
 
 ### Authors: Mallory M. Rice, Rebecca L. Maher,  Adrienne M.S. Correa, Nathan P. Lemoine, Holly V. Moeller, Andrew A. Shantz, Deron E. Burkepile, Nyssa J. Silbiger
 
