@@ -17,6 +17,7 @@ library(RColorBrewer)
 library(cowplot)
 library(car)
 library(scales)
+library(MuMIn)
 
 ## load data ###############
 ### This is the time series from Mallory Rice on bites and bore holes per coral 
@@ -126,6 +127,8 @@ anova(bore.density.mod)
 summary(bore.density.mod)
 qqnorm(resid(bore.density.mod))
 qqline(resid(bore.density.mod))
+# resquared
+ r.squaredGLMM(bore.density.mod)
 
 density.plot<-ggplot(TSData[not0,], aes(x = bore.cm2, y = bites.cm2))+
   geom_point()+
@@ -378,8 +381,10 @@ dev.off()
 # means
 TSData %>%
   group_by(Site) %>%
-  summarise(mean = mean(bore.cm2),
-            SE = sd(bore.cm2)/sqrt(n()))
+  summarise(bore.mean = mean(bore.cm2),
+            bore.SE = sd(bore.cm2)/sqrt(n()),
+            bite.mean = mean(bites.cm2),
+            bite.SE = sd(bites.cm2)/sqrt(n()))
 
 ##supplemental plot of data over time
 #scarids
