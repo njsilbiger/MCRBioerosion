@@ -1,8 +1,9 @@
-﻿# Macroborer presence on corals increases with nutrient input and promotes parrotfish corallivory
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3252571.svg)](https://doi.org/10.5281/zenodo.3252571)
+# Macroborer presence on corals increases with nutrient input and promotes parrotfish corallivory
 
 ### Authors: Mallory M. Rice, Rebecca L. Maher,  Adrienne M.S. Correa, Nathan P. Lemoine, Holly V. Moeller, Andrew A. Shantz, Deron E. Burkepile, Nyssa J. Silbiger
 
-### Journal:
+### Journal: Coral Reefs
 
 ### Funding:
 This material is based upon work supported by the U.S. National Science Foundation under Grant (OCE #16-37396) as well as a generous gift from the Gordon and Betty Moore Foundation. Research was completed under permits issued by the French Polynesian Government (Délégation à la Recherche) and the Haut-commissariat de la République en Polynésie Francaise (DTRT) (Protocole d'Accueil 2005-2018). Grants from the National Science Foundation (#1635798 to AMSC, #1455138 to DEB, NSF Graduate Research Fellowship to both MMR (#1650114) and RLM (#1314109-DGE), and the Worster Award to MMR supported this work. This work represents a contribution of the Moorea Coral Reef (MCR) LTER Site. 
@@ -19,6 +20,6 @@ For MCR_LTER metadata [click here](http://mcrlter.msi.ucsb.edu/cgi-bin/showDatas
 other metadata is in the metadata.csv file 
 
 **Output**\
-All figures prodced in paper
+All figures produced in paper
 
 **MBB scripts.R** is the script use for data analysis
