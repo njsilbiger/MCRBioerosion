@@ -15,6 +15,7 @@ library(boot)
 library(grDevices)
 library(RColorBrewer)
 library(cowplot)
+library(car)
 
 ## load data ###############
 ### This is the time series from Mallory Rice on bites and bore holes per coral 
@@ -26,6 +27,8 @@ FData<-read.csv('Data/MCR_LTER_Annual_Fish_Survey_20180612.csv')
 NutData<-read.csv('Data/MCR_LTER_Macroalgal_CHN_2005_to_2014_20151031.csv')
 #read in groundtruthing data
 TruthData<-read.csv('Data/groundtruth.csv')
+# read in the coral cover data from coralnet analysis
+CoralData<-read.csv('Data/CoralNet_benthic_cover_data.csv')
 
 
 ### analysis #############
@@ -266,7 +269,12 @@ Anova(Scar.mod2)
 summary(Scar.mod2)
 
 # Fish counts
-Scaridae.mod <-lm(log(Count+1)~Site*Year, data = Scaridae)
+
+Scaridae.sum<-Scaridae %>% # sum across the transects for analysis
+  group_by(Site, Year, Transect) %>%
+  summarise(sum.count = sum(Count))
+
+Scaridae.mod <-lm(log(sum.count+1)~Site*Year, data = Scaridae.sum)
 anova(Scaridae.mod)
 summary(Scaridae.mod)
 
@@ -276,8 +284,14 @@ hist(resid(Scaridae.mod))
 
 # Porites cover
 #Convert Porites SA to percent cover
-TSData$PoritesCover<-100*(TSData$Surface.area.m2/0.25)  # quadrats were 0.25 m2
-Porites.mod<-lm(PoritesCover^(1/4) ~Site*Year , data = TSData)
+Coralsummary <- CoralData %>% 
+  group_by(site, year, pole) %>% 
+  filter(year == 2006 |year == 2008| year == 2010|year == 2011|year == 2013|year == 2016)%>%
+  summarise(mean = mean(massive, na.rm = TRUE)) # transect level average
+
+#TSData$PoritesCover<-100*(TSData$Surface.area.m2/0.25)  # quadrats were 0.25 m2
+Porites.mod<-lm(mean~site*year , data = Coralsummary)
+#Porites.mod<-lm(PoritesCover^(1/4) ~Site*Year , data = TSData)
 anova(Porites.mod)
 summary(Porites.mod)
 
@@ -346,8 +360,10 @@ TSData %>%
 #scarids
 #sumamrize means and SE
 Scaridae.mean <- Scaridae %>%
-  group_by(Site, Year) %>%
-  summarise(mean = mean(Count), se = sd(Count)/sqrt(n()))
+  group_by(Site, Year, Transect) %>%
+  summarise(sum.count = sum(Count))%>%
+  group_by(Site,Year)%>%
+  summarise(mean = mean(sum.count), se = sd(sum.count)/sqrt(n()))
 
 # plot of Lithophaga densities across site and time
 dodge<-position_dodge(width=0.5) # this offsets the points so they don't overlap
@@ -388,18 +404,41 @@ lithophaga.plot <- ggplot(mbb.mean, aes(x = Year, y = mean.bore, colour = Site, 
 lithophaga.plot
 
 # plot of percent cover of massive Porites over site and time
-#porites surface area
-SA.plot <- ggplot(mbb.mean, aes(x = Year, y = mean.SA, colour = Site, group = Site, fill = Site))+
-  geom_line()+
-  geom_errorbar(aes(ymin = mean.SA - se.SA, ymax = mean.SA + se.SA, width=0))+
-  geom_point(size = 3, shape = 21)+
+#
+Coralsummary <- CoralData %>% 
+  group_by(site, year) %>% 
+  filter(year == 2006 |year == 2008| year == 2010|year == 2011|year == 2013|year == 2016)%>%
+  summarise(mean = mean(massive, na.rm = TRUE),
+            se = sd(massive)/sqrt(n()))%>%
+  mutate(year = as.factor(year))
+
+SA.plot <- ggplot(Coralsummary, aes(x = year, y = mean, group = site, colour = site, fill = site))+
+  geom_line(position=position_dodge(width = 0.6))+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se, width=0), 
+                position=position_dodge(width = 0.6))+
+  geom_point(size = 3, shape = 21, position=position_dodge(width = 0.6))+
+  scale_fill_manual(name = "Site", values = c('black', 'gray47', 'white'))+
+  scale_colour_manual(name = "Site", values = c("black", "black", "black"))+
   xlab('Year')+
-  ylab(expression("Massive"~italic(Porites)~"Cover (%)"))+
+  ylab(expression("Massive"~italic(Porites)~" (%)"))+
+  ylim(0,20)+
   theme_classic(base_size=12)+
-  scale_fill_manual(values = c('black', 'gray47', 'white'))+
-  scale_colour_manual(values = c("black", "gray47", "black"))+
+  theme(axis.text.x=element_text(colour="black"))+
+  theme(axis.text.y=element_text(colour="black"))+
+  theme(legend.position = c(0.8, 0.8))+
   guides(colour = FALSE, fill = FALSE)
-SA.plot
+
+#SA.plot <- ggplot(mbb.mean, aes(x = Year, y = mean.SA, colour = Site, group = Site, fill = Site))+
+ # geom_line()+
+  #geom_errorbar(aes(ymin = mean.SA - se.SA, ymax = mean.SA + se.SA, width=0))+
+  #geom_point(size = 3, shape = 21)+
+  #xlab('Year')+
+  #ylab(expression("Massive"~italic(Porites)~"Cover (%)"))+
+  #theme_classic(base_size=12)+
+  #scale_fill_manual(values = c('black', 'gray47', 'white'))+
+  #scale_colour_manual(values = c("black", "gray47", "black"))+
+  #guides(colour = FALSE, fill = FALSE)
+#SA.plot
 
 # Scars
 scar.plot <- ggplot(mbb.mean, aes(x = Year, y = mean.bite, colour = Site, group = Site, fill = Site))+
@@ -414,7 +453,14 @@ scar.plot <- ggplot(mbb.mean, aes(x = Year, y = mean.bite, colour = Site, group 
   guides(colour = FALSE, fill = FALSE)
 scar.plot
 
-supplemental <- plot_grid(lithophaga.plot, scar.plot, scaridae.plot, SA.plot, labels = c("A","B", "C", "D"), ncol = 2, align = 'v')
+supplemental <- plot_grid(lithophaga.plot, SA.plot, scar.plot, scaridae.plot, labels = c("A","B", "C", "D"), ncol = 2, align = 'v')
 supplemental
 
 ggsave("supplementalFig1.pdf", supplemental, path = "Output/", width = 6, height = 6, units = "in")
+
+## look at the relationship between parrotfish densities and bite scars
+ Scaridae.mean$Year<-as.integer(as.character(Scaridae.mean$Year)) # convert to integer
+ all<-left_join(Scaridae.mean, mbb.mean) # join together 
+ density_scars<-lm(all$mean.bite~all$mean) # look at the relationship between bites and scars
+ anova(density_scars)
+ 
