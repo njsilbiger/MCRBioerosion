@@ -159,6 +159,7 @@ ggsave(plot = borevsscar.plot, filename = 'Output/Figure3.pdf',
 Scaridae<- FData %>%
   filter(Site == 1| Site == 3 | Site==4) %>%
   filter(Habitat=='FR') %>% # only put scarides on fringing reef 
+  mutate(Total_Length = Total_Length / 10) %>%
   filter(Total_Length>10)%>% # only include the fish >10cm because those are the ones that bite
   filter(Taxonomy == 'Chlorurus microrhinos' |
            Taxonomy == 'Chlorurus sordidus'|Taxonomy == 'Scarus frenatus'|Taxonomy == 'Scarus ghobban') %>% # known corallivores
