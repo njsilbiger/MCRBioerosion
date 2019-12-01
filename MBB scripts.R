@@ -41,7 +41,7 @@ TSData<- TSData %>%
 
 # convert surface area from cm2 to m2
 #TSData$Surface.area.m2<-TSData$Surface.area.cm2*1e-4 old
-TSData$Surface.area.m2<-TSData$Ruler.surface.area..cm2.*1e-4
+TSData$Surface.area.m2<-TSData$Ruler.surface.area..cm2.*1e-04
 
 # normalize bore hole and bite data per cm2
 TSData$bore.cm2<-TSData$No.Macroborers/TSData$Ruler.surface.area..cm2.
