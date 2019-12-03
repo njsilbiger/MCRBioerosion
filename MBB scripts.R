@@ -27,7 +27,9 @@ TSData<-read.csv('Data/TimeSeries_Photo_Data_Jan2019_final.csv')
 ##read in fish data
 FData<-read.csv('Data/MCR_LTER_Annual_Fish_Survey_20180612.csv')
 # read in the CHN Data
-NutData<-read.csv('Data/MCR_LTER_Macroalgal_CHN_2005_to_2014_20151031.csv')
+NutData<-read.csv('Data/MCR_LTER_Macroalgal_CHN_2005_to_2014_20151031b.csv')
+#NutData<-read.csv('Data/MCR_LTER_Macroalgal_CHN_2005_to_2014_20151031.csv')
+
 #read in groundtruthing data
 TruthData<-read.csv('Data/groundtruth.csv')
 # read in the coral cover data from coralnet analysis
@@ -187,8 +189,10 @@ plot(FishBites$sum.fish, FishBites$mean.scars)
 Turb<-NutData %>%
   filter(Habitat =='Fringe', Genus =='Turbinaria', 
          Site == 'LTER 1'| Site == 'LTER 3' | Site=="LTER 4") %>%
+  separate(col = N, into = "N", sep = "%")%>% # remove the % sign
+  mutate(N = as.numeric(N))%>%
   group_by(Site, Year) %>%
-  summarise(N.mean = mean(N, na.rm=T), se.N = sd(N)/sqrt(n())) %>%
+  dplyr::summarise(N.mean = mean(N, na.rm=TRUE), se.N = sd(N)/sqrt(n())) %>%
   rename(N = N.mean)
         
 #Calculate the mean bioroder densities per site and year
@@ -204,48 +208,62 @@ Bore.algae<-left_join(bore, Turb)
 
 # remove the missing values for the analysis
 Bore.algae<-Bore.algae[complete.cases(Bore.algae),]
+Bore.algae$Year<-as.factor(Bore.algae$Year)
 # run a linear model 
 N.mod<-lm(bore~N, Bore.algae)
 #results
 anova(N.mod)
 summary(N.mod)
 
-pdf(file = 'Output/Figure2.pdf', width = 6, height = 6, useDingbats = FALSE)
-par(mar=c(5.1,8.3,4.1,2.1))
-j_brew_colors <- brewer.pal(n = 5, name = "Set2") # custom colors
-# make a plot of tissue N versus density of borers
-plot(Bore.algae$N, Bore.algae$bore, cex.lab = 1.5, cex.axis = 1.5, cex = 2,ylim = c(0,.20),
-     pch = as.numeric(Bore.algae$Site)+12, xlab = '% Tissue N', ylab =NA,col=j_brew_colors[as.factor(Bore.algae$Year)]  )
-#col =c(11,13,12,11,13,11,13,12)
-#j_brew_colors[c(1,2,3,1,2,1,2,3)]
-mtext(text=expression(paste('Mean density of', italic(' Lithophaga'))), side = 2, line = 4, cex = 1.5 )
-mtext(text=expression(paste(' (counts per cm'^{2},')')), side = 2, line = 2.2, cex = 1.5 )
+# pdf(file = 'Output/Figure2.pdf', width = 6, height = 6, useDingbats = FALSE)
+# par(mar=c(5.1,8.3,4.1,2.1))
+# j_brew_colors <- brewer.pal(n = 5, name = "Set2") # custom colors
+# # make a plot of tissue N versus density of borers
+# plot(Bore.algae$N, Bore.algae$bore, cex.lab = 1.5, cex.axis = 1.5, cex = 2,ylim = c(0,.20),
+#      pch = as.numeric(Bore.algae$Site)+12, xlab = '% Tissue N', ylab =NA,col=j_brew_colors[as.factor(Bore.algae$Year)]  )
+# #col =c(11,13,12,11,13,11,13,12)
+# #j_brew_colors[c(1,2,3,1,2,1,2,3)]
+# mtext(text=expression(paste('Mean density of', italic(' Lithophaga'))), side = 2, line = 4, cex = 1.5 )
+# mtext(text=expression(paste(' (counts per cm'^{2},')')), side = 2, line = 2.2, cex = 1.5 )
+# 
+# #generate new data for the fit
+# xx <- seq(0,2, length=50)
+# pred<-predict(N.mod, data.frame(N=xx), se.fit = TRUE, interval="confidence",
+#               level = 0.95)
+# # plot the predictions
+# #polygon(c(xx,rev(xx)),c(pred$fit+pred$se.fit,rev(pred$fit-pred$se.fit)),col=grey2)
+# polygon(c(xx,rev(xx)),c(pred$fit[,2],rev(pred$fit[,3])),col=grey2)
+# lines(xx, predict(N.mod, data.frame(N=xx)), lwd = 2)
+# lines(xx, pred$fit[,2], lty=2)
+# lines(xx, pred$fit[,3], lty=2)
+# 
+# #lines(xx, pred$fit+pred$se.fit, lty=2)
+# #lines(xx, pred$fit-pred$se.fit, lty=2)
+# # y error
+# segments(Bore.algae$N, Bore.algae$bore+Bore.algae$bore.se,
+#          Bore.algae$N, Bore.algae$bore-Bore.algae$bore.se)
+# # x error
+# segments(Bore.algae$N+Bore.algae$se.N, Bore.algae$bore,
+#         Bore.algae$N-Bore.algae$se.N, Bore.algae$bore)
+# 
+# legend('topleft',c('Sites','LTER 1', 'LTER 3', 'LTER 4'), 
+#        pch = c(19,13,15,16), bty='n', col = c('white','black','black','black'),
+#        text.font = c(2,1,1,1))
+# legend('bottomright',c('2008','2010','2011', '2013', '2016'), pch = c(19), col = j_brew_colors[c(1,2,3,4,5)], bty='n')
+# dev.off()
 
-#generate new data for the fit
-xx <- seq(0,2, length=50)
-pred<-predict(N.mod, data.frame(N=xx), se.fit = TRUE, interval="confidence",
-              level = 0.95)
-# plot the predictions
-#polygon(c(xx,rev(xx)),c(pred$fit+pred$se.fit,rev(pred$fit-pred$se.fit)),col=grey2)
-polygon(c(xx,rev(xx)),c(pred$fit[,2],rev(pred$fit[,3])),col=grey2)
-lines(xx, predict(N.mod, data.frame(N=xx)), lwd = 2)
-lines(xx, pred$fit[,2], lty=2)
-lines(xx, pred$fit[,3], lty=2)
-
-#lines(xx, pred$fit+pred$se.fit, lty=2)
-#lines(xx, pred$fit-pred$se.fit, lty=2)
-# y error
-segments(Bore.algae$N, Bore.algae$bore+Bore.algae$bore.se,
-         Bore.algae$N, Bore.algae$bore-Bore.algae$bore.se)
-# x error
-segments(Bore.algae$N+Bore.algae$se.N, Bore.algae$bore,
-        Bore.algae$N-Bore.algae$se.N, Bore.algae$bore)
-
-legend('topleft',c('Sites','LTER 1', 'LTER 3', 'LTER 4'), 
-       pch = c(19,13,15,16), bty='n', col = c('white','black','black','black'),
-       text.font = c(2,1,1,1))
-legend('bottomright',c('2008','2010','2011', '2013'), pch = c(19), col = j_brew_colors[c(1,2,3,4)], bty='n')
-dev.off()
+## same plot but with ggplot
+ggplot(Bore.algae, aes(N,bore))+
+  geom_point(aes(color = Year, shape = Site, size = 1))+
+  geom_smooth(method = "lm", color = 'black')+
+  geom_errorbar(aes(x = N, ymin = bore - bore.se, ymax = bore+bore.se))+
+  geom_errorbarh(aes(xmin = N-se.N, xmax = N+se.N, y = bore))+
+  xlab('% Tissue N')+
+  ylab(expression(paste('Mean density of', italic(' Lithophaga'),' (counts per cm'^{2},')')))+
+  scale_shape_manual(values=c(13, 15, 16))+
+  scale_color_brewer(palette="Set2")+
+  guides(size=FALSE)+
+  ggsave(filename = 'Output/Figure2.pdf', width = 6)
 
 # check for normality of residuals
 qqnorm(resid(N.mod))
