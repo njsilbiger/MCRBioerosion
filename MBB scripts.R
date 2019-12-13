@@ -419,6 +419,8 @@ TSData %>%
             bite.mean = mean(bites.cm2),
             bite.SE = sd(bites.cm2)/sqrt(n()))
 
+
+  summarise(mean = )
 ##supplemental plot of data over time
 #scarids
 #sumamrize means and SE
