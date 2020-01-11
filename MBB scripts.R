@@ -96,15 +96,19 @@ ndata <- with(TSData, data_frame(bore.cm2 = seq(min(bore.cm2), max(bore.cm2),
 ndata <-  add_column(ndata, fit = predict(mod3, newdata = ndata, type = 'response'))
 TSData$bite_yn<-as.factor(ifelse(TSData$bite==1, 'Yes','No')) # for the rug in the plot
 ## plot it
+
 plt <- ggplot(ndata, aes(x = bore.cm2, y = fit)) +
   geom_line() +
   geom_rug(aes(y = bite, colour = bite_yn), data = TSData) +
   scale_colour_discrete(name = 'Scar') +
-  labs(x = expression(paste('Density of '*italic(Lithophaga)*' (counts per cm'^2,')')), 
-       y = 'Probability of parrotfish scar')+
-  theme(text = element_text(size=16))
+  xlab(expression(atop(italic(Lithophaga)~"density", paste("(counts per"~{cm}^2*")"~""))))+
+  ylab("Probability of parrotfish bite scar")+
+  theme_classic()+
+  theme(text = element_text(size=12))+
+  theme(axis.text.x=element_text(colour="black"))+
+  theme(axis.text.y=element_text(colour="black"))+
+  theme(legend.position = c(0.15, 0.85))
 plt
-
 ## grad the inverse link function
 ilink <- family(mod3)$linkinv
 ## add fit and se.fit on the **link** scale
@@ -136,27 +140,27 @@ qqline(resid(bore.density.mod))
 # resquared
  r.squaredGLMM(bore.density.mod)
 
-density.plot<-ggplot(TSData[not0,], aes(x = bore.cm2, y = bites.cm2))+
-  geom_point()+
-  scale_x_continuous(trans='log',
-                     breaks = trans_breaks('log10', function(x) 10^x),
-                     labels = trans_format('log10', math_format(10^.x))
-                    )+
- #   breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))+
-  scale_y_continuous(trans='log',breaks = trans_breaks('log10', function(x) 10^x),
-                     labels = trans_format('log10', math_format(10^.x)))+
-#    breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))+
-  geom_smooth(method='lm',formula=y~x, color = 'black')+
- # coord_trans(x="log", y="log")+
- labs(x = expression(paste('Density of '*italic(Lithophaga)*' (counts per cm'^2,')')), 
-  y = expression(paste('Density of parrotfish scar (counts per cm'^2,')')))+
-  #theme_bw()+
-  theme(text = element_text(size=16))
-
+ density.plot<-ggplot(TSData[not0,], aes(x = bore.cm2, y = bites.cm2))+
+   geom_point()+
+   scale_x_continuous(trans='log',
+                      breaks = trans_breaks('log10', function(x) 10^x),
+                      labels = trans_format('log10', math_format(10^.x)))+
+   scale_y_continuous(trans='log',breaks = trans_breaks('log10', function(x) 10^x),
+                      labels = trans_format('log10', math_format(10^.x)))+
+   geom_smooth(method='lm',formula=y~x, color = 'black')+
+   xlab(expression(atop(italic(Lithophaga)~"density", paste("(counts per"~{cm}^2*")"~""))))+
+   ylab(expression(paste('Parrotfish bite scar density (counts per cm'^2,')')))+
+   theme_classic()+
+   theme(text = element_text(size=12))+
+   theme(axis.text.x=element_text(colour="black"))+
+   theme(axis.text.y=element_text(colour="black"))
+ density.plot
+ 
 # plot the logistic and density plots next to eachother
 borevsscar.plot<-plot_grid(logisiticplot, density.plot, labels = c("A", "B"))
 ggsave(plot = borevsscar.plot, filename = 'Output/Figure3.pdf', 
-       device = 'pdf', width = 10, height = 5)
+       device = 'pdf', 
+       width = 17.6, height = 12, units = "cm")
 
 ## Raw scaridae data #####
 Scaridae<- FData %>%
@@ -216,55 +220,29 @@ N.mod<-lm(bore~N, Bore.algae)
 anova(N.mod)
 summary(N.mod)
 
-# pdf(file = 'Output/Figure2.pdf', width = 6, height = 6, useDingbats = FALSE)
-# par(mar=c(5.1,8.3,4.1,2.1))
-# j_brew_colors <- brewer.pal(n = 5, name = "Set2") # custom colors
-# # make a plot of tissue N versus density of borers
-# plot(Bore.algae$N, Bore.algae$bore, cex.lab = 1.5, cex.axis = 1.5, cex = 2,ylim = c(0,.20),
-#      pch = as.numeric(Bore.algae$Site)+12, xlab = '% Tissue N', ylab =NA,col=j_brew_colors[as.factor(Bore.algae$Year)]  )
-# #col =c(11,13,12,11,13,11,13,12)
-# #j_brew_colors[c(1,2,3,1,2,1,2,3)]
-# mtext(text=expression(paste('Mean density of', italic(' Lithophaga'))), side = 2, line = 4, cex = 1.5 )
-# mtext(text=expression(paste(' (counts per cm'^{2},')')), side = 2, line = 2.2, cex = 1.5 )
-# 
-# #generate new data for the fit
-# xx <- seq(0,2, length=50)
-# pred<-predict(N.mod, data.frame(N=xx), se.fit = TRUE, interval="confidence",
-#               level = 0.95)
-# # plot the predictions
-# #polygon(c(xx,rev(xx)),c(pred$fit+pred$se.fit,rev(pred$fit-pred$se.fit)),col=grey2)
-# polygon(c(xx,rev(xx)),c(pred$fit[,2],rev(pred$fit[,3])),col=grey2)
-# lines(xx, predict(N.mod, data.frame(N=xx)), lwd = 2)
-# lines(xx, pred$fit[,2], lty=2)
-# lines(xx, pred$fit[,3], lty=2)
-# 
-# #lines(xx, pred$fit+pred$se.fit, lty=2)
-# #lines(xx, pred$fit-pred$se.fit, lty=2)
-# # y error
-# segments(Bore.algae$N, Bore.algae$bore+Bore.algae$bore.se,
-#          Bore.algae$N, Bore.algae$bore-Bore.algae$bore.se)
-# # x error
-# segments(Bore.algae$N+Bore.algae$se.N, Bore.algae$bore,
-#         Bore.algae$N-Bore.algae$se.N, Bore.algae$bore)
-# 
-# legend('topleft',c('Sites','LTER 1', 'LTER 3', 'LTER 4'), 
-#        pch = c(19,13,15,16), bty='n', col = c('white','black','black','black'),
-#        text.font = c(2,1,1,1))
-# legend('bottomright',c('2008','2010','2011', '2013', '2016'), pch = c(19), col = j_brew_colors[c(1,2,3,4,5)], bty='n')
-# dev.off()
+nut.bore.plot = ggplot(Bore.algae, aes(x = N, y = bore, colour = factor(Year)))+
+  geom_smooth(method='lm',formula=y~x, color = 'black')+
+  geom_point(aes(shape = Site), size = 3)+
+  geom_errorbarh(aes(xmin = N - se.N, xmax = N + se.N, height = 0))+
+  geom_errorbar(aes(ymin = bore - bore.se, ymax = bore + bore.se, width=0))+
+  xlab("% Tissue N")+
+  ylab(expression("Mean"~italic(Lithophaga)~" density (counts per"~{cm}^2*")"~""))+
+  ylim(-0.03, 0.2)+
+  theme_classic(base_size=12)+
+  scale_colour_colorblind(name = "Year")+
+  theme(axis.text.x=element_text(colour="black"))+
+  theme(axis.text.y=element_text(colour="black"))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))+
+  theme(legend.background = element_rect(fill="transparent"),
+        legend.title=element_text(size=6),
+        legend.text=element_text(size=6),
+        legend.position = c(0.3, 0.8),
+        legend.key.size = unit(0.5, "cm"),
+        legend.direction = "vertical", legend.box = "horizontal")+
+  guides(shape = guide_legend(override.aes = list(size = 3)))
+nut.bore.plot
 
-## same plot but with ggplot
-ggplot(Bore.algae, aes(N,bore))+
-  geom_point(aes(color = Year, shape = Site, size = 1))+
-  geom_smooth(method = "lm", color = 'black')+
-  geom_errorbar(aes(x = N, ymin = bore - bore.se, ymax = bore+bore.se))+
-  geom_errorbarh(aes(xmin = N-se.N, xmax = N+se.N, y = bore))+
-  xlab('% Tissue N')+
-  ylab(expression(paste('Mean density of', italic(' Lithophaga'),' (counts per cm'^{2},')')))+
-  scale_shape_manual(values=c(13, 15, 16))+
-  scale_color_brewer(palette="Set2")+
-  guides(size=FALSE)+
-  ggsave(filename = 'Output/Figure2.pdf', width = 6)
+ggsave("Figure2.pdf", nut.bore.plot, path = "Output/", width = 8.6, height = 10, units = "cm")
 
 # check for normality of residuals
 qqnorm(resid(N.mod))
