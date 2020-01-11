@@ -76,7 +76,8 @@ beta0<-fixef(mod2)[1]/attributes(scale(TSData$bore.cm2,center=F))$"scaled:scale"
 
 #Calculate odds of going from 1 to 2 per cm squared
 odds<-exp((beta0 +beta1*2) - (beta0 +beta1*1))
-
+# odds from 0.5 to 1
+odds<-exp((beta0 +beta1*1) - (beta0 +beta1*0.5))
 
 ## for every increase in borer density of 1/cm2(or 10000/m2) there is a 4.78 increase in the odds of being bitten
 # converted to per cm2 for easier interpretation
@@ -420,7 +421,6 @@ TSData %>%
             bite.SE = sd(bites.cm2)/sqrt(n()))
 
 
-  summarise(mean = )
 ##supplemental plot of data over time
 #scarids
 #sumamrize means and SE
