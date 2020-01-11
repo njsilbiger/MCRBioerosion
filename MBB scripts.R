@@ -412,16 +412,21 @@ Scaridae.mean <- Scaridae %>%
 dodge<-position_dodge(width=0.5) # this offsets the points so they don't overlap
 
 #plot
+Scaridae.mean$Year<-as.factor(as.character(Scaridae.mean$Year))
 scaridae.plot <- ggplot(Scaridae.mean, aes(x = Year, y = mean, colour = Site, group = Site, fill = Site))+
-  geom_line()+
-  geom_errorbar(aes(ymin = mean - se, ymax = mean + se, width=0))+
-  geom_point(size = 3, shape = 21)+
+  geom_line(position=position_dodge(width = 0.6))+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se, width=0), position=position_dodge(width = 0.6))+
+  geom_point(size = 3, shape = 21, position=position_dodge(width = 0.6))+
   xlab('Year')+
   ylab(expression(Parrotfish~"per 250"~{m}^2*~""))+
+  ylim(0,20)+
+  scale_x_discrete(labels = c("2006", "2008", "2010", "2012", "2014", "2016"))+
   theme_classic(base_size=12)+
   scale_fill_manual(values = c('black', 'gray47', 'white'))+
-  scale_colour_manual(values = c("black", "gray47", "black"))+
-  guides(colour = FALSE, fill = FALSE)
+  scale_colour_manual(values = c("black", "black", "black"))+
+  guides(colour = FALSE, fill = FALSE)+
+  theme(axis.text.x=element_text(colour="black"))+
+  theme(axis.text.y=element_text(colour="black"))
 scaridae.plot
 
 # lithophagids
@@ -433,17 +438,24 @@ mbb.mean <- TSData %>%
             mean.SA = mean(Surface.area.m2), se.SA = sd(Surface.area.m2)/sqrt(n()))
 
 # plot
+mbb.mean$Year = as.factor(as.character(mbb.mean$Year))
 lithophaga.plot <- ggplot(mbb.mean, aes(x = Year, y = mean.bore, colour = Site, group = Site, fill = Site))+
-  geom_line()+
-  geom_errorbar(aes(ymin = mean.bore - se.bore, ymax = mean.bore + se.bore, width=0))+
-  geom_point(size = 3, shape = 21)+
+  geom_line(position=position_dodge(width = 0.6))+
+  geom_errorbar(aes(ymin = mean.bore - se.bore, ymax = mean.bore + se.bore, width=0), position=position_dodge(width = 0.6))+
+  geom_point(size = 3, shape = 21, position=position_dodge(width = 0.6))+
   xlab('Year')+
   ylab(expression(italic(Lithophaga)~"per"~{cm}^2*~""))+
+  scale_x_discrete(labels = c("2006", "2008", "2010", "2012", "2014", "2016"))+
   theme_classic(base_size=12)+
   theme(legend.justification=c(0,0), legend.position=c(0.6,0.55))+
   #theme(legend.background = element_rect(colour="black", size=0.5, linetype="solid"))+
-  scale_fill_manual(values = c('black', 'gray47', 'white'))+
-  scale_colour_manual(values = c("black", "gray47", "black"))
+  scale_fill_manual(values = c('black', 'gray47', 'white'), labels = c("LTER 1", "LTER 3", "LTER 4"))+
+  scale_colour_manual(values = c("black", "black", "black"), labels = c("LTER 1", "LTER 3", "LTER 4"))+
+  theme(legend.text=element_text(size=8))+
+  theme(legend.background = element_rect(fill="transparent"))+
+  theme(axis.text.x=element_text(colour="black"))+
+  theme(axis.text.y=element_text(colour="black"))+
+  theme(legend.position = c(0.6, 0.57))
 lithophaga.plot
 
 # plot of percent cover of massive Porites over site and time
@@ -465,41 +477,33 @@ SA.plot <- ggplot(Coralsummary, aes(x = year, y = mean, group = site, colour = s
   xlab('Year')+
   ylab(expression("Massive"~italic(Porites)~" (%)"))+
   ylim(0,20)+
+  scale_x_discrete(labels = c("2006", "2008", "2010", "2012", "2014", "2016"))+
   theme_classic(base_size=12)+
   theme(axis.text.x=element_text(colour="black"))+
   theme(axis.text.y=element_text(colour="black"))+
-  theme(legend.position = c(0.8, 0.8))+
   guides(colour = FALSE, fill = FALSE)
-
-#SA.plot <- ggplot(mbb.mean, aes(x = Year, y = mean.SA, colour = Site, group = Site, fill = Site))+
- # geom_line()+
-  #geom_errorbar(aes(ymin = mean.SA - se.SA, ymax = mean.SA + se.SA, width=0))+
-  #geom_point(size = 3, shape = 21)+
-  #xlab('Year')+
-  #ylab(expression("Massive"~italic(Porites)~"Cover (%)"))+
-  #theme_classic(base_size=12)+
-  #scale_fill_manual(values = c('black', 'gray47', 'white'))+
-  #scale_colour_manual(values = c("black", "gray47", "black"))+
-  #guides(colour = FALSE, fill = FALSE)
-#SA.plot
+SA.plot
 
 # Scars
 scar.plot <- ggplot(mbb.mean, aes(x = Year, y = mean.bite, colour = Site, group = Site, fill = Site))+
-  geom_line()+
-  geom_errorbar(aes(ymin = mean.bite - se.bite, ymax = mean.bite + se.bite, width=0))+
-  geom_point(size = 3, shape = 21)+
+  geom_line(position=position_dodge(width = 0.6))+
+  geom_errorbar(aes(ymin = mean.bite - se.bite, ymax = mean.bite + se.bite, width=0), position=position_dodge(width = 0.6))+
+  geom_point(size = 3, shape = 21, position=position_dodge(width = 0.6))+
   xlab('Year')+
   ylab(expression("Parrotfish scars"~"per"~{cm}^2*~""))+
+  scale_x_discrete(labels = c("2006", "2008", "2010", "2012", "2014", "2016"))+
   theme_classic(base_size=12)+
   scale_fill_manual(values = c('black', 'gray47', 'white'))+
-  scale_colour_manual(values = c("black", "gray47", "black"))+
+  scale_colour_manual(values = c("black", "black", "black"))+
+  theme(axis.text.x=element_text(colour="black"))+
+  theme(axis.text.y=element_text(colour="black"))+
   guides(colour = FALSE, fill = FALSE)
 scar.plot
 
 supplemental <- plot_grid(lithophaga.plot, SA.plot, scar.plot, scaridae.plot, labels = c("A","B", "C", "D"), ncol = 2, align = 'v')
 supplemental
 
-ggsave("supplementalFig1.pdf", supplemental, path = "Output/", width = 6, height = 6, units = "in")
+ggsave("supplementalFig1.pdf", supplemental, path = "Output/",  width = 17.6, height = 17.6, units = "cm")
 
 ## look at the relationship between parrotfish densities and bite scars
  Scaridae.mean$Year<-as.integer(as.character(Scaridae.mean$Year)) # convert to integer
