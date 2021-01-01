@@ -5,6 +5,8 @@
 
 ### Journal: Coral Reefs
 
+### Link: [Article here](https://link.springer.com/article/10.1007/s00338-020-01904-y)
+
 ### Funding:
 This material is based upon work supported by the U.S. National Science Foundation under Grant (OCE #16-37396) as well as a generous gift from the Gordon and Betty Moore Foundation. Research was completed under permits issued by the French Polynesian Government (Délégation à la Recherche) and the Haut-commissariat de la République en Polynésie Francaise (DTRT) (Protocole d'Accueil 2005-2018). Grants from the National Science Foundation (#1635798 to AMSC, #1455138 to DEB, NSF Graduate Research Fellowship to both MMR (#1650114) and RLM (#1314109-DGE), and the Worster Award to MMR supported this work. This work represents a contribution of the Moorea Coral Reef (MCR) LTER Site. 
 
